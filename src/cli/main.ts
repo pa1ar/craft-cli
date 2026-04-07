@@ -18,6 +18,8 @@ import { runLinks } from "./commands/links.ts";
 import { runCat } from "./commands/cat.ts";
 import { runLog } from "./commands/log.ts";
 import { runDiff } from "./commands/diff.ts";
+import { runPatch } from "./commands/patch.ts";
+import { runUndo } from "./commands/undo.ts";
 import { closeJournal } from "./journal-singleton.ts";
 
 const HELP = `craft — Craft Docs CLI
@@ -53,10 +55,12 @@ Write
   blocks insert <parentId|--date DATE> --json FILE
   blocks update <id> --markdown STR
   blocks rm <id>...
+  patch <docId> --old STR --new STR       find and replace in blocks (or pipe old\\n---\\nnew)
   blocks mv <id>... --to pageId|--date DATE
   tasks add <markdown> --to inbox|daily|doc [--doc ID] [--date D] [--schedule D]
   tasks update <id> [--state todo|done|canceled] [--markdown STR] [--schedule D]
   tasks rm <id>...
+  undo [docId] [--force] [--dry-run]      revert last mutation
 
 Collections
   col ls [--doc ID]
@@ -153,6 +157,12 @@ async function main() {
         break;
       case "diff":
         await runDiff(rest);
+        break;
+      case "patch":
+        await runPatch(rest);
+        break;
+      case "undo":
+        await runUndo(rest);
         break;
       default:
         console.error(err(`unknown command: ${cmd}`));

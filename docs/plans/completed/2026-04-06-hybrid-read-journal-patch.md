@@ -144,8 +144,8 @@ notes: compares current block tree to last journal entry, text + json output
 
 ### B4. `craft undo` command
 ```
-[ ] implement undo command
-notes: depends on B2
+[x] implement undo command
+notes: handles update/patch (restore pre), append/insert (delete blocks), warns on delete/move
 ```
 - `craft undo [docId]` - revert last CLI mutation
 - flow:
@@ -178,8 +178,8 @@ Goal: Edit-tool equivalent for Craft blocks + multi-doc read.
 
 ### C1. `craft patch` command
 ```
-[ ] implement patch command
-notes: depends on B1 (journal). benefits from A2 (local-db) but works without it
+[x] implement patch command
+notes: --old/--new, stdin (old\n---\nnew), --dry-run, journal pre/post, exit 4 not found / exit 1 ambiguous
 ```
 - `craft patch <docId> --old "text" --new "text"`
 - flow:
@@ -212,8 +212,8 @@ notes: parallel fetch, --- separators, supports --json/--depth/--raw/--no-links
 
 ### D1. Optimize help output for AI
 ```
-[ ] improve help text structure
-notes: independent, do after C1/C2 so new commands are included
+[x] improve help text structure
+notes: help updated in main.ts with all new commands, --api flag, CRAFT_LOCAL_PATH
 ```
 - `craft --help` - compact: one line per command, no wrapping. format: `command  description`
 - `craft <cmd> --help` - structured: synopsis, flags table, examples, caveats. greppable
@@ -221,8 +221,8 @@ notes: independent, do after C1/C2 so new commands are included
 
 ### D2. Update craft-cli skill
 ```
-[ ] update skill to reflect new commands
-notes: depends on D1
+[x] update skill to reflect new commands
+notes: added patch/cat/diff/undo/log, hybrid mode section, new recipes, --api flag
 ```
 - update `~/.claude/skills/craft-cli/` with new commands: patch, diff, undo, log, cat
 - document hybrid mode: when it's active, what --api does
@@ -255,10 +255,10 @@ Parallel execution:
 - `bun test` after every code change
 - rebuild binary is required for CLI testing (compiled bun binary)
 
-## Unresolved questions
+## Resolved questions
 
-- A1: does Craft's local SQLite contain full block markdown or just plain-text extracts? if plain-text only, patch's find step in hybrid mode may need fuzzy matching or API fallback for exact markdown comparison
-- A1: does the local DB update in real-time as the user edits, or only on app save/sync? affects diff reliability
-- A1: are subpage (nested page) blocks represented in the local DB? if not, hybrid search won't find content inside subpages
-- B4: undo for deletes - API has no undelete. should we warn-only, or attempt to re-insert from pre snapshot (creates new block IDs, loses position)?
-- C1: patch delimiter format for multi-line stdin input - what's the least surprising convention?
+- A1: SQLite has plain text only, PlainTextSearch JSON has full markdown. patch uses API block tree for exact matching
+- A1: both local stores update within 1 second of API writes (Craft app must be running)
+- A1: subpages represented with entityType=page, but no parent-child info in SQLite (flat)
+- B4: undo for deletes = warn-only with pre-deletion content shown. re-insert creates new IDs/loses position
+- C1: stdin delimiter = `\n---\n` between old and new text
