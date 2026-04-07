@@ -1,5 +1,6 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
-import { table, err } from "../format.ts";
+import { table, err, dim } from "../format.ts";
+import { getJournal } from "../journal-singleton.ts";
 import type { TaskScope, TaskLocation } from "../../lib/types.ts";
 
 export async function runTasks(argv: string[]) {
@@ -63,6 +64,17 @@ export async function runTasks(argv: string[]) {
           },
         },
       ]);
+      try {
+        const journal = getJournal();
+        journal.record({
+          op: "task-add",
+          docId: `tasks:${to}`,
+          blockIds: res.items.map((t: any) => t.id),
+          post: res.items,
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : `added ${res.items[0]?.id}`);
       return;
     }
@@ -70,6 +82,15 @@ export async function runTasks(argv: string[]) {
     case "update": {
       const id = args.positional[0];
       if (!id) throw new Error("usage: craft tasks update <id> [--state ...] [--markdown STR] [--schedule D]");
+      let priorState: unknown = null;
+      try {
+        // scan multiple scopes - task could be in any of them
+        for (const scope of ["active", "inbox", "upcoming"] as const) {
+          const tasksRes = await client.tasks.list(scope);
+          const found = tasksRes.items.find((t: any) => t.id === id);
+          if (found) { priorState = found; break; }
+        }
+      } catch { /* best effort */ }
       const res = await client.tasks.update([
         {
           id,
@@ -81,6 +102,18 @@ export async function runTasks(argv: string[]) {
           },
         },
       ]);
+      try {
+        const journal = getJournal();
+        journal.record({
+          op: "task-update",
+          docId: `tasks:${id}`,
+          blockIds: [id],
+          pre: priorState,
+          post: res.items?.[0] ?? { markdown: args.flags.markdown, state: args.flags.state },
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : "updated");
       return;
     }
@@ -88,7 +121,30 @@ export async function runTasks(argv: string[]) {
     case "rm":
     case "delete": {
       if (args.positional.length === 0) throw new Error("usage: craft tasks rm <id>...");
+      let preSnapshots: unknown[] = [];
+      try {
+        // scan multiple scopes to find tasks before deletion
+        const allTasks: any[] = [];
+        for (const scope of ["active", "inbox", "upcoming"] as const) {
+          const tasksRes = await client.tasks.list(scope);
+          allTasks.push(...tasksRes.items);
+        }
+        preSnapshots = args.positional
+          .map(id => allTasks.find((t: any) => t.id === id))
+          .filter(Boolean);
+      } catch { /* best effort */ }
       const res = await client.tasks.delete(args.positional);
+      try {
+        const journal = getJournal();
+        journal.record({
+          op: "task-delete",
+          docId: `tasks:${args.positional[0]}`,
+          blockIds: args.positional,
+          pre: preSnapshots,
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : `deleted ${res.items.length}`);
       return;
     }

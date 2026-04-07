@@ -16,6 +16,7 @@ export function parseWithGlobals(argv: string[], spec: Parameters<typeof parseAr
     profile: { type: "string" as const },
     json: { type: "boolean" as const },
     quiet: { type: "boolean" as const },
+    api: { type: "boolean" as const },
   };
   return parseArgs(argv, { ...spec, flags });
 }

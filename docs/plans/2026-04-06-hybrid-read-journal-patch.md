@@ -12,8 +12,8 @@ Goal: instant reads from Craft's local FTS5 database, API fallback when unavaila
 
 ### A1. Explore and document Craft's local SQLite schema
 ```
-[ ] explore local sqlite schema
-notes: -
+[x] explore local sqlite schema
+notes: docs/local-sqlite-schema.md, docs/local-performance-results.md
 ```
 - open `~/Library/Containers/com.lukilabs.lukiapp/Data/Library/Application Support/com.lukilabs.lukiapp/Search/*.sqlite`
 - document all tables, columns, indexes, FTS5 tokenizer config
@@ -25,8 +25,8 @@ notes: -
 
 ### A2. `src/lib/local-db.ts` - local DB reader module
 ```
-[ ] implement local-db.ts
-notes: depends on A1 findings
+[x] implement local-db.ts
+notes: 337 lines, 28 unit tests, CRAFT_LOCAL_PATH env var, validateSchema exported
 ```
 - discover Craft sqlite path: scan `~/Library/Containers/com.lukilabs.lukiapp*/Data/Library/Application Support/*/Search/` for .sqlite files
 - support both bundle IDs: `com.lukilabs.lukiapp` (standard) and `com.lukilabs.lukiapp-setapp` (Setapp)
@@ -43,8 +43,8 @@ notes: depends on A1 findings
 
 ### A3. Integrate local DB into CLI commands
 ```
-[ ] wire local-db into search and listing commands
-notes: depends on A2
+[x] wire local-db into search and listing commands
+notes: docs ls/search use local when no filters, --api flag, lazy client construction, cat command added
 ```
 - `src/cli/local.ts` - singleton that initializes local-db on first use, caches the connection
 - add `--api` flag to force API-only mode (bypass local DB)
@@ -73,8 +73,8 @@ Goal: SQLite-based mutation journal for diff, undo, log.
 
 ### B1. `src/lib/journal.ts` - journal database module
 ```
-[ ] implement journal.ts
-notes: independent of Track A
+[x] implement journal.ts
+notes: 169 lines, 13 unit tests, WAL mode, ISO timestamp format
 ```
 - create/open `~/.cache/craft-cli/journal.db` using `bun:sqlite`
 - auto-create tables on first open:
@@ -102,8 +102,8 @@ CREATE INDEX IF NOT EXISTS idx_mutations_doc ON mutations(doc_id, ts);
 
 ### B2. Wire journal into existing write commands
 ```
-[ ] add journaling to all mutation commands
-notes: depends on B1
+[x] add journaling to all mutation commands
+notes: blocks append/insert/update/rm/mv + tasks add/update/rm, all try-caught
 ```
 - commands that need journaling:
   - `blocks update` - pre: GET affected blocks before PUT. post: the updated content
@@ -119,8 +119,8 @@ notes: depends on B1
 
 ### B3. `craft diff` command
 ```
-[ ] implement diff command
-notes: depends on B2
+[x] implement diff command
+notes: compares current block tree to last journal entry, text + json output
 ```
 - `craft diff <docId>` - compare current state to last journal entry for that doc
 - flow:
@@ -161,8 +161,8 @@ notes: depends on B2
 
 ### B5. `craft log` command
 ```
-[ ] implement log command
-notes: depends on B1
+[x] implement log command
+notes: table or json output, --last N, --since DATE filters
 ```
 - `craft log [docId]` - show mutation history
 - `craft log` (no args) - all recent mutations across all docs
@@ -197,8 +197,8 @@ notes: depends on B1 (journal). benefits from A2 (local-db) but works without it
 
 ### C2. `craft cat` command
 ```
-[ ] implement cat command
-notes: independent
+[x] implement cat command
+notes: parallel fetch, --- separators, supports --json/--depth/--raw/--no-links
 ```
 - `craft cat <id> [id...]` - read one or more docs, concat output
 - parallel fetch via existing `parallel()` helper

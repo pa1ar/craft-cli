@@ -2,6 +2,7 @@ import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { parseArgs, readStdin } from "../args.ts";
 import { err, dim } from "../format.ts";
 import { getAndRender, renderBacklinksMarkdown, attachBacklinksJson } from "../render.ts";
+import { getJournal } from "../journal-singleton.ts";
 import type { Position } from "../../lib/types.ts";
 
 export async function runBlocks(argv: string[]) {
@@ -87,6 +88,18 @@ export async function runBlocks(argv: string[]) {
       const md = await readMarkdown(args.flags);
       if (!md) throw new Error("usage: craft blocks append <docId>|--date DATE --markdown STR|--file F|-");
       const res = await client.blocks.append(md, position as any);
+      try {
+        const journal = getJournal();
+        const docId = (position as any).pageId ?? `daily:${(position as any).date}`;
+        journal.record({
+          op: "append",
+          docId,
+          blockIds: res.items.map((b: any) => b.id),
+          post: res.items,
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : `inserted ${res.items.length} blocks`);
       return;
     }
@@ -105,6 +118,18 @@ export async function runBlocks(argv: string[]) {
         Array.isArray(blocks) ? blocks : blocks.blocks,
         position as any
       );
+      try {
+        const journal = getJournal();
+        const docId = (position as any).pageId ?? `daily:${(position as any).date}`;
+        journal.record({
+          op: "insert",
+          docId,
+          blockIds: res.items.map((b: any) => b.id),
+          post: res.items,
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : `inserted ${res.items.length} blocks`);
       return;
     }
@@ -114,9 +139,27 @@ export async function runBlocks(argv: string[]) {
       if (!id) throw new Error("usage: craft blocks update <id> --markdown STR");
       const markdown = await readMarkdown(args.flags);
       const font = args.flags.font;
+      let priorState: any = null;
+      try {
+        priorState = await client.blocks.get(id, { format: "json", maxDepth: 0 });
+      } catch { /* best effort */ }
       const res = await client.blocks.update([
         { id, markdown, font },
       ]);
+      try {
+        const journal = getJournal();
+        // use parent doc/page id if available from --parent flag or positional context
+        const docId = (args.flags.parent as string) ?? id;
+        journal.record({
+          op: "update",
+          docId,
+          blockIds: [id],
+          pre: priorState ? [{ id, markdown: priorState.markdown }] : null,
+          post: [{ id, markdown, font }],
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : "updated");
       return;
     }
@@ -124,7 +167,26 @@ export async function runBlocks(argv: string[]) {
     case "rm":
     case "delete": {
       if (args.positional.length === 0) throw new Error("usage: craft blocks rm <id>...");
+      let preSnapshots: unknown[] = [];
+      try {
+        preSnapshots = await Promise.all(
+          args.positional.map(id =>
+            client.blocks.get(id, { format: "json", maxDepth: 0 }).catch(() => null)
+          )
+        );
+      } catch { /* best effort */ }
       const res = await client.blocks.delete(args.positional);
+      try {
+        const journal = getJournal();
+        journal.record({
+          op: "delete",
+          docId: args.positional[0],
+          blockIds: args.positional,
+          pre: preSnapshots.filter(Boolean),
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : `deleted ${res.items.length}`);
       return;
     }
@@ -139,6 +201,18 @@ export async function runBlocks(argv: string[]) {
         ? { position: (args.flags.position as any) ?? "end", date }
         : { position: (args.flags.position as any) ?? "end", pageId: to! };
       const res = await client.blocks.move(args.positional, position);
+      try {
+        const journal = getJournal();
+        const docId = (position as any).pageId ?? `daily:${(position as any).date}`;
+        journal.record({
+          op: "move",
+          docId,
+          blockIds: args.positional,
+          post: position,
+        });
+      } catch (e) {
+        console.error(dim(`journal warning: ${(e as Error).message}`));
+      }
       console.log(args.flags.json ? JSON.stringify(res, null, 2) : "moved");
       return;
     }

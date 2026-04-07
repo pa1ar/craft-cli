@@ -269,63 +269,47 @@ export function validateSchema(dbPath: string): boolean {
 }
 
 export function discoverLocalStore(spaceId?: string): LocalStore | null {
+  // allow overriding the app container base path via env
+  const envPath = process.env.CRAFT_LOCAL_PATH;
+  if (envPath) {
+    return discoverInBase(envPath, spaceId);
+  }
+
   for (const containerId of CONTAINER_IDS) {
     const base = containerBase(containerId);
-    const searchDir = join(base, "Search");
-    const ptsBase = join(base, "PlainTextSearch");
+    const result = discoverInBase(base, spaceId);
+    if (result) return result;
+  }
 
-    if (!existsSync(searchDir)) continue;
+  return null;
+}
 
-    let sqliteFiles: string[];
-    try {
-      sqliteFiles = readdirSync(searchDir).filter((f) => f.endsWith(".sqlite"));
-    } catch {
-      continue;
-    }
+function discoverInBase(base: string, spaceId?: string): LocalStore | null {
+  const searchDir = join(base, "Search");
+  const ptsBase = join(base, "PlainTextSearch");
 
-    if (sqliteFiles.length === 0) continue;
+  if (!existsSync(searchDir)) return null;
 
-    // if spaceId provided, look for matching file
-    if (spaceId) {
-      const match = sqliteFiles.find((f) => f.includes(spaceId));
-      if (!match) continue;
-      const dbPath = join(searchDir, match);
-      if (!validateSchema(dbPath)) {
-        console.error(`[local-db] schema mismatch in ${dbPath}, skipping`);
-        continue;
-      }
-      // find matching PTS dir
-      const ptsDirName = basename(match, ".sqlite").replace("SearchIndex_", "");
-      const ptsDir = join(ptsBase, ptsDirName);
-      return new LocalStore({
-        dbPath,
-        ptsDir: existsSync(ptsDir) ? ptsDir : null,
-      });
-    }
+  let sqliteFiles: string[];
+  try {
+    sqliteFiles = readdirSync(searchDir).filter((f) => f.endsWith(".sqlite"));
+  } catch {
+    return null;
+  }
 
-    // no spaceId: pick the largest sqlite file (primary space)
-    let best: { file: string; size: number } | null = null;
-    for (const f of sqliteFiles) {
-      try {
-        const s = statSync(join(searchDir, f)).size;
-        if (!best || s > best.size) best = { file: f, size: s };
-      } catch {
-        continue;
-      }
-    }
+  if (sqliteFiles.length === 0) return null;
 
-    if (!best) continue;
-
-    const dbPath = join(searchDir, best.file);
+  // if spaceId provided, look for matching file
+  if (spaceId) {
+    const match = sqliteFiles.find((f) => f.includes(spaceId));
+    if (!match) return null;
+    const dbPath = join(searchDir, match);
     if (!validateSchema(dbPath)) {
       console.error(`[local-db] schema mismatch in ${dbPath}, skipping`);
-      continue;
+      return null;
     }
-
-    const ptsDirName = basename(best.file, ".sqlite").replace(
-      "SearchIndex_",
-      "",
-    );
+    // find matching PTS dir
+    const ptsDirName = basename(match, ".sqlite").replace("SearchIndex_", "");
     const ptsDir = join(ptsBase, ptsDirName);
     return new LocalStore({
       dbPath,
@@ -333,5 +317,32 @@ export function discoverLocalStore(spaceId?: string): LocalStore | null {
     });
   }
 
-  return null;
+  // no spaceId: pick the largest sqlite file (primary space)
+  let best: { file: string; size: number } | null = null;
+  for (const f of sqliteFiles) {
+    try {
+      const s = statSync(join(searchDir, f)).size;
+      if (!best || s > best.size) best = { file: f, size: s };
+    } catch {
+      continue;
+    }
+  }
+
+  if (!best) return null;
+
+  const dbPath = join(searchDir, best.file);
+  if (!validateSchema(dbPath)) {
+    console.error(`[local-db] schema mismatch in ${dbPath}, skipping`);
+    return null;
+  }
+
+  const ptsDirName = basename(best.file, ".sqlite").replace(
+    "SearchIndex_",
+    "",
+  );
+  const ptsDir = join(ptsBase, ptsDirName);
+  return new LocalStore({
+    dbPath,
+    ptsDir: existsSync(ptsDir) ? ptsDir : null,
+  });
 }

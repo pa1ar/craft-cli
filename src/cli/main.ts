@@ -15,6 +15,10 @@ import { runComment } from "./commands/comment.ts";
 import { runWhiteboards } from "./commands/whiteboards.ts";
 import { runRaw } from "./commands/raw.ts";
 import { runLinks } from "./commands/links.ts";
+import { runCat } from "./commands/cat.ts";
+import { runLog } from "./commands/log.ts";
+import { runDiff } from "./commands/diff.ts";
+import { closeJournal } from "./journal-singleton.ts";
 
 const HELP = `craft — Craft Docs CLI
 
@@ -31,6 +35,8 @@ Read
   docs search <pattern> [--include] [--folder] [--fetch-blocks] [--json]
   docs get <id> [--json] [--depth N] [--metadata] [--raw] [--no-links] [--exhaustive]
   docs daily [DATE] [--json] [--raw] [--no-links]   fetch daily note
+  cat <id> [id...]                                   read multiple docs, concat output
+  diff <docId>                                       compare to last known state
   blocks get <id> [--json] [--depth N] [--no-links]
   # backlinks are appended by default — pass --no-links to skip the extra search call
   blocks search <docId> <pattern> [--before N] [--after N] [--fetch]
@@ -67,6 +73,7 @@ Links
   links in <blockId> [--text STR] [--exhaustive] backlinks via title search (fast) or full scan
 
 Misc
+  log [docId] [--last N] [--since DATE]              mutation history
   upload <file> (--parent ID | --date D | --sibling ID) [--position start|end|before|after]
   comment <blockId> <text>
   wb mk --parent ID
@@ -76,11 +83,13 @@ Misc
 Global
   --profile NAME    override active profile
   --json            machine-readable output
+  --api             force API-only mode (skip local database)
   --help            show this help
 
 Env overrides
   CRAFT_URL, CRAFT_KEY    bypass config entirely
   CRAFT_PROFILE           default profile name
+  CRAFT_LOCAL_PATH        override local Craft database location
 `;
 
 async function main() {
@@ -136,6 +145,15 @@ async function main() {
       case "links":
         await runLinks(rest);
         break;
+      case "cat":
+        await runCat(rest);
+        break;
+      case "log":
+        await runLog(rest);
+        break;
+      case "diff":
+        await runDiff(rest);
+        break;
       default:
         console.error(err(`unknown command: ${cmd}`));
         console.error("run 'craft --help' for usage");
@@ -156,6 +174,8 @@ async function main() {
     }
     console.error(err(`error: ${String(e)}`));
     process.exit(1);
+  } finally {
+    closeJournal();
   }
 }
 

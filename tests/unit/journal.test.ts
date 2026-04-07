@@ -106,8 +106,8 @@ describe("Journal", () => {
     db.exec(`
       INSERT INTO mutations (ts, op, doc_id, block_ids, pre, post)
       VALUES
-        (datetime('now', '-30 days'), 'update', 'old-doc', '["b1"]', null, '{"v":1}'),
-        (datetime('now', '-10 days'), 'update', 'old-doc', '["b2"]', null, '{"v":2}')
+        (strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days'), 'update', 'old-doc', '["b1"]', null, '{"v":1}'),
+        (strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days'), 'update', 'old-doc', '["b2"]', null, '{"v":2}')
     `);
     // also add a fresh one via record
     journal.record({ op: "update", docId: "fresh-doc", blockIds: ["b3"], post: { v: 3 } });
