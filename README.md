@@ -94,6 +94,35 @@ Global flags: `--json`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, 
 
 craft-cli uses a hybrid read architecture on macOS: reads from Craft's local SQLite FTS5 index and PlainTextSearch JSON files, writes through the REST API. Both local stores update within 1 second of any write (API or Craft app), so data is always fresh.
 
+```mermaid
+flowchart LR
+    subgraph READ ["READ (local, ~1ms)"]
+        direction TB
+        R1[craft docs ls] --> SQLite[(SQLite FTS5)]
+        R2[craft docs search] --> SQLite
+        R3[craft diff] --> JSON[(PlainTextSearch JSON)]
+    end
+
+    subgraph WRITE ["WRITE (API, ~500ms)"]
+        direction TB
+        W1[craft blocks update] --> API[Craft REST API]
+        W2[craft patch] --> API
+        W3[craft undo] --> API
+    end
+
+    API -->|"syncs ~1s"| Craft[Craft App]
+    Craft -->|derives| SQLite
+    Craft -->|derives| JSON
+
+    WRITE --> Journal[(Journal SQLite)]
+    Journal --> READ
+
+    style READ fill:#1a3a1a,stroke:#4a8a4a
+    style WRITE fill:#3a1a1a,stroke:#8a4a4a
+```
+
+On average, local reads are **~3,600x faster** than API calls. A 10-step AI workflow that takes ~25s via API completes in ~200ms locally.
+
 ### Benchmarks (1ar vault, ~1,200 docs, ~46,000 blocks)
 
 | Operation | REST API | Craft MCP | craft-cli (local) | craft-cli (API fallback) | Speedup |
