@@ -79,14 +79,13 @@ craft upload <file> --parent <doc>
 craft comment <id> "text"
 craft wb mk / el add / el get / el update / el rm
 
-craft raw GET|POST|... /path     escape hatch for any API endpoint
-```
-
 craft patch <doc> --old STR --new STR  find and replace in blocks
 craft cat <id> [id...]               read multiple docs at once
 craft diff <id>                      compare to last known state
 craft undo [id] [--force]            revert last mutation
 craft log [id] [--last N]            mutation history
+
+craft raw GET|POST|... /path     escape hatch for any API endpoint
 ```
 
 Global flags: `--json`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--api`.
