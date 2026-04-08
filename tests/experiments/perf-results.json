@@ -1,0 +1,270 @@
+{
+  "timestamp": "2026-04-06T18:00:25.817Z",
+  "iterations": 5,
+  "sampleDoc": {
+    "id": "DA05226B-0498-4C0B-8BD9-CF8301410F45",
+    "title": "apple notes as database"
+  },
+  "idMapping": {
+    "note": "API id = SQLite 'id' column. SQLite 'documentId' = PTS 'documentId' = PTS filename. These are different ID spaces.",
+    "totalMappings": 1245
+  },
+  "counts": {
+    "apiDocs": 1226,
+    "ptsFiles": 1216,
+    "ptsMappedToApi": 1216,
+    "ptsUnmapped": 0,
+    "sqliteDocs": 1245
+  },
+  "performance": [
+    {
+      "operation": "Search \"typescript\"",
+      "api": {
+        "avg": 2270.9786335999993,
+        "min": 1274.5956669999996,
+        "max": 2979.4387500000003,
+        "times": [
+          2979.4387500000003,
+          2934.809792,
+          1482.6923749999987,
+          1274.5956669999996,
+          2683.356583999999
+        ]
+      },
+      "sqlite": {
+        "avg": 1.3458748000004561,
+        "min": 0.08258300000125018,
+        "max": 6.255708000000595,
+        "times": [
+          6.255708000000595,
+          0.1703749999996944,
+          0.11145800000122108,
+          0.10924999999951979,
+          0.08258300000125018
+        ]
+      },
+      "json": {
+        "avg": 292.7124834000002,
+        "min": 205.25645799999984,
+        "max": 615.098958999999,
+        "times": [
+          615.098958999999,
+          227.2828750000008,
+          209.71012500000143,
+          206.21399999999994,
+          205.25645799999984
+        ]
+      }
+    },
+    {
+      "operation": "Search \"SYNC_TEST\"",
+      "api": {
+        "avg": 1402.5658331999998,
+        "min": 979.3937909999986,
+        "max": 2365.4240419999987,
+        "times": [
+          979.3937909999986,
+          2365.4240419999987,
+          1167.5310000000027,
+          1121.0954579999998,
+          1379.3848749999997
+        ]
+      },
+      "sqlite": {
+        "avg": 0.5444333999999799,
+        "min": 0.0705420000012964,
+        "max": 2.3815840000024764,
+        "times": [
+          2.3815840000024764,
+          0.10649999999805004,
+          0.0864579999979469,
+          0.0705420000012964,
+          0.07708300000012969
+        ]
+      },
+      "json": {
+        "avg": 198.49954119999893,
+        "min": 183.37116599999717,
+        "max": 244.40879099999802,
+        "times": [
+          244.40879099999802,
+          191.08829100000003,
+          189.74916600000142,
+          183.880291999998,
+          183.37116599999717
+        ]
+      }
+    },
+    {
+      "operation": "Get doc by ID",
+      "api": {
+        "avg": 4561.274533399998,
+        "min": 2115.8863329999986,
+        "max": 6959.004584000002,
+        "times": [
+          6959.004584000002,
+          2115.8863329999986,
+          6309.399833999996,
+          5124.3213749999995,
+          2297.760540999996
+        ]
+      },
+      "json": {
+        "avg": 0.723033200003556,
+        "min": 0.35033300000213785,
+        "max": 2.022208000002138,
+        "times": [
+          2.022208000002138,
+          0.43100000000413274,
+          0.41608300000370946,
+          0.35033300000213785,
+          0.395542000005662
+        ]
+      }
+    },
+    {
+      "operation": "List all docs",
+      "api": {
+        "avg": 1488.6238668000005,
+        "min": 1076.5873750000028,
+        "max": 2579.912624999997,
+        "times": [
+          1147.252916999998,
+          1076.5873750000028,
+          1463.2033750000046,
+          2579.912624999997,
+          1176.1630420000001
+        ]
+      },
+      "sqlite": {
+        "avg": 26.68975819999905,
+        "min": 13.266958000000159,
+        "max": 79.65179199999693,
+        "times": [
+          79.65179199999693,
+          13.306499999998778,
+          13.847708000001148,
+          13.266958000000159,
+          13.375832999998238
+        ]
+      },
+      "json": {
+        "avg": 241.066300200003,
+        "min": 169.18237500000396,
+        "max": 503.6662920000017,
+        "times": [
+          503.6662920000017,
+          180.27029200000106,
+          179.43250000000262,
+          172.78004200000578,
+          169.18237500000396
+        ]
+      }
+    },
+    {
+      "operation": "Check doc changed",
+      "api": {
+        "avg": 3246.5314916000016,
+        "min": 2603.4743339999986,
+        "max": 4975.284625,
+        "times": [
+          4975.284625,
+          2958.126083000003,
+          2719.6902499999997,
+          2603.4743339999986,
+          2976.0821660000074
+        ]
+      },
+      "json": {
+        "avg": 0.4885665999987395,
+        "min": 0.2272499999962747,
+        "max": 1.0971250000002328,
+        "times": [
+          1.0971250000002328,
+          0.5813750000088476,
+          0.2272499999962747,
+          0.3034169999882579,
+          0.23366600000008475
+        ]
+      }
+    }
+  ],
+  "completeness": [
+    {
+      "docId": "7C95E3EB-E8FC-4C06-9592-1D1DB3233A52",
+      "internalId": "DAC6AD3A-1AE5-4CB2-A881-B1EDCAD72A89",
+      "title": "2026.03.31",
+      "apiHasContent": true,
+      "ptsHasContent": true,
+      "sqliteHasEntry": true,
+      "markdownSimilarity": "94% length ratio",
+      "apiLen": 3262,
+      "ptsLen": 3403,
+      "notes": "ok"
+    },
+    {
+      "docId": "68CCD381-5EFD-465A-AA24-3F7C8F4C8616",
+      "internalId": "2350EE6F-FEDA-4077-A554-57B8437F93B1",
+      "title": "cloudflare configs",
+      "apiHasContent": true,
+      "ptsHasContent": true,
+      "sqliteHasEntry": true,
+      "markdownSimilarity": "100% length ratio",
+      "apiLen": 11355,
+      "ptsLen": 11891,
+      "notes": "ok"
+    },
+    {
+      "docId": "C6CEE33A-B1E0-4E12-A77F-334A096014F1",
+      "internalId": "57C10D53-4F6F-4313-A6C8-22D833E5C801",
+      "title": "why we train/fight",
+      "apiHasContent": true,
+      "ptsHasContent": true,
+      "sqliteHasEntry": true,
+      "markdownSimilarity": "74% length ratio",
+      "apiLen": 168,
+      "ptsLen": 124,
+      "notes": "ok"
+    },
+    {
+      "docId": "43A70339-58B7-4015-B7A8-949062B2D973",
+      "internalId": "D75E540A-2950-4716-85DD-4908CF432F12",
+      "title": "x community notes analysis",
+      "apiHasContent": true,
+      "ptsHasContent": true,
+      "sqliteHasEntry": true,
+      "markdownSimilarity": "73% length ratio",
+      "apiLen": 192,
+      "ptsLen": 140,
+      "notes": "ok"
+    },
+    {
+      "docId": "FE429327-4ECE-4F26-AB0A-432F885C1772",
+      "internalId": "09B77512-ECB9-42B3-BD3B-CDCE67F6B98B",
+      "title": "✅ Zero to One",
+      "apiHasContent": true,
+      "ptsHasContent": true,
+      "sqliteHasEntry": true,
+      "markdownSimilarity": "98% length ratio",
+      "apiLen": 1931,
+      "ptsLen": 2016,
+      "notes": "ok"
+    }
+  ],
+  "searchCompleteness": {
+    "term": "typescript",
+    "apiCount": 1,
+    "sqliteCount": 15,
+    "ptsCount": 16,
+    "apiNotInSqlite": 1,
+    "apiNotInPts": 1,
+    "sqliteNotInApi": 15,
+    "ptsNotInApi": 16
+  },
+  "overallCoverage": {
+    "apiNotInPts": 10,
+    "apiNotInSqlite": 0,
+    "ptsNotInApi": 0,
+    "sqliteNotInApi": 19
+  }
+}

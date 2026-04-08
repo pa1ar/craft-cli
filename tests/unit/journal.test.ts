@@ -151,4 +151,87 @@ describe("Journal", () => {
     const j = new Journal(":memory:");
     expect(() => j.close()).not.toThrow();
   });
+
+  // --- undo selector logic tests ---
+  // these test the pattern used in src/cli/commands/undo.ts to find
+  // the last non-undo mutation that hasn't already been undone
+
+  test("undo selector: skips undo entries to find real mutation", () => {
+    journal.record({ op: "append", docId: "doc-1", blockIds: ["b1"], post: [{ id: "b1" }] });
+    journal.record({ op: "undo", docId: "doc-1", blockIds: ["b1"], pre: [{ id: "b1" }] });
+
+    const candidates = journal.listMutations({ last: 10 });
+    const undoneIds = new Set<number>();
+    for (let i = 0; i < candidates.length; i++) {
+      if (candidates[i].op === "undo") {
+        for (let j = i + 1; j < candidates.length; j++) {
+          if (candidates[j].op !== "undo" && !undoneIds.has(candidates[j].id)) {
+            if (JSON.stringify(candidates[j].blockIds) === JSON.stringify(candidates[i].blockIds)) {
+              undoneIds.add(candidates[j].id);
+              break;
+            }
+          }
+        }
+      }
+    }
+    const target = candidates.find((m) => m.op !== "undo" && !undoneIds.has(m.id)) ?? null;
+
+    // the append was undone, so nothing left to undo
+    expect(target).toBeNull();
+  });
+
+  test("undo selector: finds un-undone mutation after an undo", () => {
+    journal.record({ op: "append", docId: "doc-1", blockIds: ["b1"], post: [{ id: "b1" }] });
+    journal.record({ op: "append", docId: "doc-1", blockIds: ["b2"], post: [{ id: "b2" }] });
+    journal.record({ op: "undo", docId: "doc-1", blockIds: ["b2"], pre: [{ id: "b2" }] });
+
+    const candidates = journal.listMutations({ last: 10 });
+    const undoneIds = new Set<number>();
+    for (let i = 0; i < candidates.length; i++) {
+      if (candidates[i].op === "undo") {
+        for (let j = i + 1; j < candidates.length; j++) {
+          if (candidates[j].op !== "undo" && !undoneIds.has(candidates[j].id)) {
+            if (JSON.stringify(candidates[j].blockIds) === JSON.stringify(candidates[i].blockIds)) {
+              undoneIds.add(candidates[j].id);
+              break;
+            }
+          }
+        }
+      }
+    }
+    const target = candidates.find((m) => m.op !== "undo" && !undoneIds.has(m.id)) ?? null;
+
+    // b2 append was undone, but b1 append is still live
+    expect(target).not.toBeNull();
+    expect(target!.blockIds).toEqual(["b1"]);
+    expect(target!.op).toBe("append");
+  });
+
+  test("undo selector: handles multiple sequential undos correctly", () => {
+    journal.record({ op: "update", docId: "doc-1", blockIds: ["b1"], pre: { v: 0 }, post: { v: 1 } });
+    journal.record({ op: "update", docId: "doc-1", blockIds: ["b2"], pre: { v: 0 }, post: { v: 2 } });
+    journal.record({ op: "update", docId: "doc-1", blockIds: ["b3"], pre: { v: 0 }, post: { v: 3 } });
+    journal.record({ op: "undo", docId: "doc-1", blockIds: ["b3"], pre: { v: 3 }, post: { v: 0 } });
+    journal.record({ op: "undo", docId: "doc-1", blockIds: ["b2"], pre: { v: 2 }, post: { v: 0 } });
+
+    const candidates = journal.listMutations({ last: 20 });
+    const undoneIds = new Set<number>();
+    for (let i = 0; i < candidates.length; i++) {
+      if (candidates[i].op === "undo") {
+        for (let j = i + 1; j < candidates.length; j++) {
+          if (candidates[j].op !== "undo" && !undoneIds.has(candidates[j].id)) {
+            if (JSON.stringify(candidates[j].blockIds) === JSON.stringify(candidates[i].blockIds)) {
+              undoneIds.add(candidates[j].id);
+              break;
+            }
+          }
+        }
+      }
+    }
+    const target = candidates.find((m) => m.op !== "undo" && !undoneIds.has(m.id)) ?? null;
+
+    // b3 and b2 were undone, only b1 remains
+    expect(target).not.toBeNull();
+    expect(target!.blockIds).toEqual(["b1"]);
+  });
 });

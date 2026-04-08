@@ -14,19 +14,33 @@ export async function runUndo(argv: string[]) {
   const targetId = args.positional[0];
   const journal = getJournal();
 
-  // find last mutation - filter by docId if provided
-  const last = targetId
-    ? journal.listMutations({ docId: targetId, last: 1 })[0] ?? null
-    : journal.listMutations({ last: 1 })[0] ?? null;
+  // find last non-undo mutation that hasn't already been undone
+  const candidates = targetId
+    ? journal.listMutations({ docId: targetId, last: 20 })
+    : journal.listMutations({ last: 20 });
+
+  // collect IDs of mutations that have been undone (undo entries reference the same blockIds)
+  const undoneIds = new Set<number>();
+  for (let i = 0; i < candidates.length; i++) {
+    const m = candidates[i];
+    if (m.op === "undo") {
+      // find the next non-undo entry with matching blockIds and mark it as undone
+      for (let j = i + 1; j < candidates.length; j++) {
+        if (candidates[j].op !== "undo" && !undoneIds.has(candidates[j].id)) {
+          const sameBlocks = JSON.stringify(candidates[j].blockIds) === JSON.stringify(m.blockIds);
+          if (sameBlocks) {
+            undoneIds.add(candidates[j].id);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  const last = candidates.find((m) => m.op !== "undo" && !undoneIds.has(m.id)) ?? null;
 
   if (!last) {
     console.error(err("no mutations to undo"));
-    process.exit(1);
-  }
-
-  // don't undo an undo
-  if (last.op === "undo") {
-    console.error(err("last mutation is already an undo"));
     process.exit(1);
   }
 

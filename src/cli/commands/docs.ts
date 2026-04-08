@@ -41,13 +41,14 @@ export async function runDocs(argv: string[]) {
     case "ls":
     case "list": {
       // try local for simple ls (no filters that require API)
-      const local = getLocalStore({ forceApi: !!args.flags.api, quiet: !!args.flags.quiet });
+      const local = getLocalStore({ forceApi: !!args.flags.api });
       const useLocal = local && !args.flags.location && !args.flags.folder
         && !args.flags["modified-since"] && !args.flags["created-since"]
         && !args.flags.metadata;
 
       if (useLocal) {
-        const docs = local.listDocs();
+        // enrich with PTS data only for --json (needs isDailyNote, tags)
+        const docs = local.listDocs({ enrich: !!args.flags.json });
         if (args.flags.json) {
           console.log(JSON.stringify({ items: docs.map((d) => ({ id: d.id, title: d.title, isDailyNote: d.isDailyNote, tags: d.tags })) }, null, 2));
           return;
@@ -57,7 +58,6 @@ export async function runDocs(argv: string[]) {
             docs.map((d) => ({
               id: d.id,
               title: d.title,
-              modified: d.modified ? new Date(d.modified * 1000).toISOString().slice(0, 10) : "",
             }))
           )
         );
@@ -95,7 +95,7 @@ export async function runDocs(argv: string[]) {
       if (!pattern) throw new Error("usage: craft docs search <pattern>");
 
       // try local FTS5 search for simple queries
-      const local = getLocalStore({ forceApi: !!args.flags.api, quiet: !!args.flags.quiet });
+      const local = getLocalStore({ forceApi: !!args.flags.api });
       const useLocal = local && !args.flags["fetch-blocks"] && !args.flags.folder
         && !args.flags.location && !args.flags.ids && !args.flags.include;
 

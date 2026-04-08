@@ -102,7 +102,7 @@ export class LocalStore {
     }
   }
 
-  listDocs(): LocalDoc[] {
+  listDocs(opts?: { enrich?: boolean }): LocalDoc[] {
     try {
       const rows = this.db
         .query<any, []>(
@@ -110,8 +110,14 @@ export class LocalStore {
         )
         .all();
 
-      return rows.map((row) => {
-        const pts = this.readPts(row.documentId);
+      // filter out internal pseudo-documents (non-UUID ids like block_taskInbox)
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const docs = rows.filter((row) => UUID_RE.test(row.id));
+
+      const shouldEnrich = opts?.enrich !== false && this.ptsDir !== null;
+
+      return docs.map((row) => {
+        const pts = shouldEnrich ? this.readPts(row.documentId) : null;
         return {
           id: row.id,
           documentId: row.documentId,

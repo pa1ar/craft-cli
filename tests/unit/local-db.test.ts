@@ -84,13 +84,13 @@ beforeEach(() => {
 
   // 2 documents
   insertRow(db, {
-    id: "ENT-DOC-1",
+    id: "A0000001-0000-0000-0000-000000000001",
     content: "meeting notes april",
     entityType: "document",
     documentId: "DOC-INT-AAA",
   });
   insertRow(db, {
-    id: "ENT-DOC-2",
+    id: "A0000001-0000-0000-0000-000000000002",
     content: "project roadmap",
     entityType: "document",
     documentId: "DOC-INT-BBB",
@@ -234,14 +234,14 @@ describe("search", () => {
     const results = store.search("meeting");
     expect(results.length).toBeGreaterThanOrEqual(2);
     const ids = results.map((r) => r.id);
-    expect(ids).toContain("ENT-DOC-1");
+    expect(ids).toContain("A0000001-0000-0000-0000-000000000001");
     expect(ids).toContain("BLK-1");
   });
 
   test("respects entityType filter", () => {
     const results = store.search("meeting", { entityType: "document" });
     expect(results.length).toBe(1);
-    expect(results[0].id).toBe("ENT-DOC-1");
+    expect(results[0].id).toBe("A0000001-0000-0000-0000-000000000001");
   });
 
   test("respects limit", () => {
@@ -261,7 +261,7 @@ describe("listDocs", () => {
     const docs = store.listDocs();
     expect(docs.length).toBe(2);
 
-    const doc1 = docs.find((d) => d.id === "ENT-DOC-1")!;
+    const doc1 = docs.find((d) => d.id === "A0000001-0000-0000-0000-000000000001")!;
     expect(doc1).toBeDefined();
     expect(doc1.title).toBe("meeting notes april");
     expect(doc1.isDailyNote).toBe(false);
@@ -269,7 +269,7 @@ describe("listDocs", () => {
     expect(doc1.contentHash).toBe("ABC123HASH");
     expect(doc1.modified).toBe(800000000 + NSDATE_EPOCH);
 
-    const doc2 = docs.find((d) => d.id === "ENT-DOC-2")!;
+    const doc2 = docs.find((d) => d.id === "A0000001-0000-0000-0000-000000000002")!;
     expect(doc2.isDailyNote).toBe(true);
     expect(doc2.tags).toEqual(["project/main"]);
   });
@@ -284,11 +284,53 @@ describe("listDocs", () => {
     expect(docs[0].modified).toBe(0);
     expect(docs[0].contentHash).toBe("");
   });
+
+  test("filters out non-UUID pseudo-documents", () => {
+    // insert internal pseudo-docs like Craft's block_taskInbox
+    insertRow(db, {
+      id: "block_taskInbox",
+      content: "Task Inbox",
+      entityType: "document",
+      documentId: "INTERNAL-1",
+    });
+    insertRow(db, {
+      id: "block_taskLogbook",
+      content: "Task Logbook",
+      entityType: "document",
+      documentId: "INTERNAL-2",
+    });
+
+    const docs = store.listDocs();
+    expect(docs.length).toBe(2); // only the 2 real UUID docs
+    expect(docs.find((d) => d.id === "block_taskInbox")).toBeUndefined();
+    expect(docs.find((d) => d.id === "block_taskLogbook")).toBeUndefined();
+  });
+
+  test("enrich: false skips PTS file reads", () => {
+    const docs = store.listDocs({ enrich: false });
+    expect(docs.length).toBe(2);
+    // without enrichment, all PTS fields are defaults
+    expect(docs[0].isDailyNote).toBe(false);
+    expect(docs[0].tags).toEqual([]);
+    expect(docs[0].contentHash).toBe("");
+    expect(docs[0].modified).toBe(0);
+    // but id and title still come from SQLite
+    expect(docs[0].id).toBeTruthy();
+    expect(docs[0].title).toBeTruthy();
+  });
+
+  test("enrich: true reads PTS data", () => {
+    const docs = store.listDocs({ enrich: true });
+    const doc1 = docs.find((d) => d.id === "A0000001-0000-0000-0000-000000000001")!;
+    expect(doc1.isDailyNote).toBe(false);
+    expect(doc1.tags).toEqual(["tag/one", "tag/two"]);
+    expect(doc1.contentHash).toBe("ABC123HASH");
+  });
 });
 
 describe("getDocContent", () => {
   test("resolves entity ID and reads PTS JSON", () => {
-    const doc = store.getDocContent("ENT-DOC-1");
+    const doc = store.getDocContent("A0000001-0000-0000-0000-000000000001");
     expect(doc).not.toBeNull();
     expect(doc!.documentId).toBe("DOC-INT-AAA");
     expect(doc!.title).toBe("Test Document");
@@ -306,7 +348,7 @@ describe("getDocContent", () => {
 
   test("returns null when PTS dir is missing", () => {
     const noPtsStore = LocalStore.fromDb(db, null);
-    const doc = noPtsStore.getDocContent("ENT-DOC-1");
+    const doc = noPtsStore.getDocContent("A0000001-0000-0000-0000-000000000001");
     expect(doc).toBeNull();
   });
 });
@@ -327,9 +369,9 @@ describe("getDocContentByInternalId", () => {
 
 describe("findBlockByContent", () => {
   test("finds blocks in a specific document", () => {
-    const results = store.findBlockByContent("ENT-DOC-1", "meeting");
+    const results = store.findBlockByContent("A0000001-0000-0000-0000-000000000001", "meeting");
     expect(results.length).toBeGreaterThanOrEqual(1);
-    // should find BLK-1 and ENT-DOC-1 (both in DOC-INT-AAA with 'meeting')
+    // should find BLK-1 and A0000001-0000-0000-0000-000000000001 (both in DOC-INT-AAA with 'meeting')
     const ids = results.map((r) => r.id);
     expect(ids).toContain("BLK-1");
   });
@@ -342,8 +384,8 @@ describe("findBlockByContent", () => {
 
 describe("resolveId", () => {
   test("maps entity ID to internal document ID", () => {
-    expect(store.resolveId("ENT-DOC-1")).toBe("DOC-INT-AAA");
-    expect(store.resolveId("ENT-DOC-2")).toBe("DOC-INT-BBB");
+    expect(store.resolveId("A0000001-0000-0000-0000-000000000001")).toBe("DOC-INT-AAA");
+    expect(store.resolveId("A0000001-0000-0000-0000-000000000002")).toBe("DOC-INT-BBB");
   });
 
   test("returns null for non-document entities", () => {
@@ -358,12 +400,12 @@ describe("resolveId", () => {
 
 describe("checkChanged", () => {
   test("returns false when hash matches", () => {
-    const result = store.checkChanged("ENT-DOC-1", "ABC123HASH");
+    const result = store.checkChanged("A0000001-0000-0000-0000-000000000001", "ABC123HASH");
     expect(result).toBe(false);
   });
 
   test("returns true when hash differs", () => {
-    const result = store.checkChanged("ENT-DOC-1", "OLDHASH");
+    const result = store.checkChanged("A0000001-0000-0000-0000-000000000001", "OLDHASH");
     expect(result).toBe(true);
   });
 
@@ -374,7 +416,7 @@ describe("checkChanged", () => {
 
   test("returns null when PTS dir missing", () => {
     const noPtsStore = LocalStore.fromDb(db, null);
-    const result = noPtsStore.checkChanged("ENT-DOC-1", "any");
+    const result = noPtsStore.checkChanged("A0000001-0000-0000-0000-000000000001", "any");
     expect(result).toBeNull();
   });
 });
@@ -384,7 +426,7 @@ describe("NSDate conversion", () => {
     // 2026-04-06 00:00:00 UTC
     // unix: 1775433600
     // nsdate: 1775433600 - 978307200 = 797126400
-    const doc = store.getDocContent("ENT-DOC-2");
+    const doc = store.getDocContent("A0000001-0000-0000-0000-000000000002");
     expect(doc).not.toBeNull();
     // modified nsdate = 810000000 -> unix = 810000000 + 978307200 = 1788307200
     expect(doc!.modified).toBe(1788307200);
