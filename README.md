@@ -82,7 +82,64 @@ craft wb mk / el add / el get / el update / el rm
 craft raw GET|POST|... /path     escape hatch for any API endpoint
 ```
 
-Global flags: `--json`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`.
+craft patch <doc> --old STR --new STR  find and replace in blocks
+craft cat <id> [id...]               read multiple docs at once
+craft diff <id>                      compare to last known state
+craft undo [id] [--force]            revert last mutation
+craft log [id] [--last N]            mutation history
+```
+
+Global flags: `--json`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--api`.
+
+## Why this is faster than the API or MCP
+
+craft-cli uses a hybrid read architecture on macOS: reads from Craft's local SQLite FTS5 index and PlainTextSearch JSON files, writes through the REST API. Both local stores update within 1 second of any write (API or Craft app), so data is always fresh.
+
+### Benchmarks (1ar vault, ~1,200 docs, ~46,000 blocks)
+
+| Operation | REST API | Craft MCP | craft-cli (local) | craft-cli (API fallback) | Speedup |
+|---|---|---|---|---|---|
+| Search vault for a term | 2,271ms | 2,271ms + MCP hop | **1.3ms** | 2,271ms | **1,700x** |
+| Read document content | 4,561ms | 4,561ms + MCP hop | **0.7ms** | 4,561ms | **6,300x** |
+| Check if doc changed | 3,247ms (full fetch) | 3,247ms + MCP hop | **0.5ms** (contentHash) | 3,247ms | **6,600x** |
+| List all documents | 1,489ms | 1,489ms + MCP hop | **184ms** | 1,489ms | **8x** |
+
+Methodology: 5 iterations each, wall-clock time, same machine. API = Craft REST API via HTTP. MCP = same API + MCP protocol overhead. Local = bun:sqlite FTS5 queries + JSON file reads. See `docs/local-performance-results.md` for raw data.
+
+### Why not just use the API?
+
+The API is the only write path and the authoritative source for block hierarchy. But for reads:
+
+| Dimension | REST API / MCP | craft-cli hybrid |
+|---|---|---|
+| Read latency | 150ms - 4.5s per call | <1ms - 184ms (local SQLite + JSON) |
+| Search reliability | `regexps` mode misses short terms | FTS5 finds them (unicode61 tokenizer) |
+| Change detection | must fetch full doc to compare | `contentHash` field, single JSON read |
+| Offline reads | no | yes (local data stores) |
+| Rate limits | yes (though generous) | no (local reads are free) |
+| Context window cost | verbose JSON responses | compact markdown or `--json` on demand |
+| Backlinks | not supported natively | faked via title search + block:// filter |
+| Mutation history | none | SQLite journal with diff/undo/log |
+
+### Why not just use local files (Obsidian-style)?
+
+Local markdown vaults (Obsidian, etc.) are the gold standard for AI file editing - instant read/write, `grep`, `git diff`. But Craft's block model doesn't map cleanly to flat markdown: nested pages, cards, collections, styled blocks, tasks with scheduling all lose structure. Mirroring to files creates a cache invalidation nightmare without webhooks.
+
+craft-cli takes a different approach: read from Craft's own local data stores (which Craft keeps in sync), write through the API. No mirroring, no sync to manage, no structure loss.
+
+| Dimension | Local MD (Obsidian) | craft-cli |
+|---|---|---|
+| Read speed | <1ms | <1ms (local), 150ms-4.5s (API fallback) |
+| Write speed | <1ms | 200-800ms (API, server-validated) |
+| Rich content (cards, tasks, collections) | no | yes (full block model) |
+| Sync to Craft app | none | instant (API writes sync, local reads from Craft's DB) |
+| Change detection | `git diff` | `contentHash` + journal-based `craft diff` |
+| Undo | `git checkout` | `craft undo` (journal-based, read-before-write safety) |
+| Surgical edit | Edit tool (line-based) | `craft patch` (block-based, same find-and-replace pattern) |
+
+### Sync timing
+
+Both local data stores (SQLite FTS5 and PlainTextSearch JSON) update within 1 second of a write via the API or the Craft app. Verified by appending a marker block via API and polling local file modification times. Craft app must be running for sync to occur.
 
 ## Architecture
 
@@ -116,14 +173,17 @@ graph TD
     subgraph "craft-cli"
         CLI[CLI binary]
         LIB[CraftClient lib]
-        LOCAL[Local DB reader<br/>planned]
+        LOCAL[Local DB reader]
+        JOURNAL[(Journal SQLite<br/>~/.cache/craft-cli/journal.db)]
     end
 
     CLI --> LIB
     CLI --> LOCAL
+    CLI --> JOURNAL
     LIB -->|reads + writes| API
     LOCAL -->|reads only| SQLITE
     LOCAL -->|reads only| JSON
+    JOURNAL -->|tracks mutations| JOURNAL
 ```
 
 ### Where data lives
@@ -148,11 +208,11 @@ graph TD
 
 ### How craft-cli uses this
 
-**Current (v0.1):** API-only. All reads and writes go through the REST API.
+**Hybrid mode (default on Mac):** `docs ls` and `docs search` read from local SQLite + PlainTextSearch JSON when available. All writes go through the REST API. Falls back to API-only when local data is absent (non-Mac, Craft not installed).
 
-**Planned (hybrid mode):** Reads from local SQLite + PlainTextSearch JSON when available (instant, offline-capable). Writes always go through the API (server-validated, synced). Falls back to API-only when local data is absent (non-Mac, Craft not installed). The `--api` flag forces API-only mode.
+**API-only mode:** pass `--api` on any command, or set `CRAFT_LOCAL_PATH` to override auto-discovery.
 
-Key insight: the API is the only write path, but local data stores enable instant search, change detection via contentHash, and document-level reads without network calls.
+**Mutation journal:** every write command (blocks append/insert/update/rm/mv, tasks add/update/rm, patch) records pre/post state to `~/.cache/craft-cli/journal.db`. Enables `craft diff`, `craft undo`, and `craft log`.
 
 ## Library usage
 
