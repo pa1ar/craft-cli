@@ -2,7 +2,51 @@
 
 CLI wrapper over the [Craft Docs](https://www.craft.do/) "API for All Docs".
 
-## What this is
+Single-binary Bun CLI, AI-agent-first, runs on macOS and Linux. Also exports a TypeScript library for Raycast and Node scripts.
+
+---
+
+## For AI agents (quick start)
+
+If you are an AI coding agent landing in a fresh environment and you need to read or edit the user's Craft Docs vault, this is the entry point. Everything below is copy-pasteable.
+
+```sh
+# 1. clone and install (one command, idempotent, safe to re-run)
+git clone https://github.com/pa1ar/craft-cli.git ~/dev/craft-cli
+cd ~/dev/craft-cli && ./install.sh
+
+# 2. authenticate - ask the user for URL and API key from Craft → Settings → Developer
+craft setup --url "https://connect.craft.do/links/XXX/api/v1" --key "pdk_..."
+
+# 3. on Linux / headless / any host without the Craft desktop app, persist api-only mode
+craft mode api
+
+# 4. verify
+craft whoami
+```
+
+After install:
+- `skill/SKILL.md` in the repo is the **agent reference** - full command cheatsheet, recipes, caveats, precedence rules. Read it before writing any scripts against the CLI.
+- On a Claude Code host, `install.sh` symlinks `skill/` to `~/.claude/skills/craft-cli` so the skill loads automatically.
+- `craft --help` shows the command surface and quick-start flow.
+- `~/.config/craft-cli/config.json` (mode 0600) stores credentials + persisted mode.
+
+If `install.sh` is unavailable or fails, the manual fallback is:
+
+```sh
+bun install && bun run build
+mkdir -p ~/.local/bin
+ln -sf "$PWD/dist/craft" ~/.local/bin/craft
+
+# only if ~/.claude exists - use -sfn so re-running doesn't create a
+# circular "skill/skill" symlink inside the existing link target
+[ -d ~/.claude ] && mkdir -p ~/.claude/skills && \
+  ln -sfn "$PWD/skill" ~/.claude/skills/craft-cli
+```
+
+---
+
+## For humans
 
 An AI-native CLI for the Craft Docs API. The primary goal is to make Craft content as easy to read and edit from AI coding agents (Claude Code, Codex, OpenCode, etc.) as local files are in tools like Obsidian.
 
@@ -18,37 +62,20 @@ Craft has a solid API but no official CLI. AI agents need a fast, predictable, s
 
 This is a personal tool published as-is. I don't work for Craft and don't plan to maintain package manager distributions (Homebrew, npm global, etc.). If Craft wants to adopt or fork this into an official CLI, they're welcome to.
 
-Install from source (see below).
-
-## Install
-
-```sh
-git clone https://github.com/pa1ar/craft-cli.git
-cd craft-cli
-bun install
-bun run build
-```
-
-The build produces a compiled binary at `dist/craft`. Symlink it somewhere on your PATH:
-
-```sh
-ln -sf "$PWD/dist/craft" ~/.local/bin/craft
-```
+Install from source: run `./install.sh` after cloning, or use the manual steps in the Quick start above.
 
 ## Setup
 
-```sh
-craft setup --url "https://connect.craft.do/links/XXX/api/v1" --key "pdk_..."
-craft whoami
-```
+Credentials stored at `~/.config/craft-cli/config.json` (mode 0600). Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_MODE` (see [Hybrid vs API-only mode](#how-craft-cli-uses-this)), `CRAFT_LOCAL_PATH`.
 
-Credentials stored at `~/.config/craft-cli/config.json` (mode 0600). Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`.
+On Linux or any host where Craft is not installed, run `craft mode api` after setup to skip local-store discovery entirely.
 
 ## Commands
 
 ```
 craft whoami                     identity and space info
 craft profiles list              manage multiple spaces
+craft mode [api|hybrid]          show or persist read mode (hybrid default)
 
 craft folders ls                 folder tree
 craft folders mk / rm            create / delete folders
@@ -238,7 +265,17 @@ graph TD
 
 **Hybrid mode (default on Mac):** `docs ls` and `docs search` read from local SQLite + PlainTextSearch JSON when available. All writes go through the REST API. Falls back to API-only when local data is absent (non-Mac, Craft not installed).
 
-**API-only mode:** pass `--api` on any command, or set `CRAFT_LOCAL_PATH` to override auto-discovery.
+**API-only mode:** run `craft mode api` once to persist the setting (stored in `~/.config/craft-cli/config.json`). Use this on Linux or any host where Craft is not installed. Journal, undo, log, and diff keep working — they use `~/.cache/craft-cli/journal.db`, which is cross-platform. Flip back with `craft mode hybrid`, check current state with `craft mode`.
+
+```
+craft mode                # show current mode + source
+craft mode api            # persist api-only (Linux / headless)
+craft mode hybrid         # persist hybrid (default)
+CRAFT_MODE=api craft ...  # runtime override, one invocation
+craft docs ls --api       # per-command override, still wins over mode
+```
+
+Precedence (highest wins): `--api` flag → `CRAFT_MODE` env → persisted `config.mode` → `hybrid` default.
 
 **Mutation journal:** every write command (blocks append/insert/update/rm/mv, tasks add/update/rm, patch) records pre/post state to `~/.cache/craft-cli/journal.db`. Enables `craft diff`, `craft undo`, and `craft log`.
 

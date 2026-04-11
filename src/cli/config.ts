@@ -11,9 +11,33 @@ export interface Profile {
   spaceId?: string;
 }
 
+export type Mode = "hybrid" | "api";
+
 export interface Config {
   default: string;
   profiles: Record<string, Profile>;
+  /** read mode. absent = "hybrid" (default). "api" disables local store reads. */
+  mode?: Mode;
+}
+
+export type ModeSource = "env" | "config" | "default";
+
+export interface ResolvedMode {
+  mode: Mode;
+  source: ModeSource;
+}
+
+/** resolve mode with precedence: CRAFT_MODE env > cfg.mode > "hybrid".
+ * per-command --api flag precedence is handled at call sites (local.ts forceApi). */
+export function resolveMode(cfg: Config | null): ResolvedMode {
+  const envRaw = process.env.CRAFT_MODE?.trim().toLowerCase();
+  if (envRaw === "api" || envRaw === "hybrid") {
+    return { mode: envRaw, source: "env" };
+  }
+  if (cfg?.mode === "api" || cfg?.mode === "hybrid") {
+    return { mode: cfg.mode, source: "config" };
+  }
+  return { mode: "hybrid", source: "default" };
 }
 
 export const CONFIG_PATH = join(homedir(), ".config", "craft-cli", "config.json");

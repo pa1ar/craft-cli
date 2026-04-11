@@ -20,16 +20,27 @@ import { runLog } from "./commands/log.ts";
 import { runDiff } from "./commands/diff.ts";
 import { runPatch } from "./commands/patch.ts";
 import { runUndo } from "./commands/undo.ts";
+import { runMode } from "./commands/mode.ts";
 import { closeJournal } from "./journal-singleton.ts";
+import { loadConfig, resolveMode } from "./config.ts";
+import { setModeOverride } from "./local.ts";
 
 const HELP = `craft — Craft Docs CLI
+Repo: https://github.com/pa1ar/craft-cli
+Agent docs / recipes / caveats: <repo>/skill/SKILL.md
 
 Usage: craft <command> [args]
+
+Quick start (fresh machine)
+  1. craft setup --url <URL> --key <KEY>    (get from Craft → Settings → Developer)
+  2. craft mode api                          on Linux / headless / no Craft app
+  3. craft whoami                            verify
 
 Setup
   setup --url URL --key KEY [--profile NAME]   store credentials (verified)
   whoami                                        show active profile + space
   profiles {list|use|rm}                        manage profiles
+  mode [api|hybrid]                             show or set read mode (hybrid default)
 
 Read
   folders ls [--tree] [--json]                  list folders
@@ -87,12 +98,13 @@ Misc
 Global
   --profile NAME    override active profile
   --json            machine-readable output
-  --api             force API-only mode (skip local database)
+  --api             force API-only for this command (overrides mode + CRAFT_MODE)
   --help            show this help
 
 Env overrides
   CRAFT_URL, CRAFT_KEY    bypass config entirely
   CRAFT_PROFILE           default profile name
+  CRAFT_MODE              override persistent mode: api | hybrid
   CRAFT_LOCAL_PATH        override local Craft database location
 `;
 
@@ -105,6 +117,17 @@ async function main() {
 
   const cmd = argv[0]!;
   const rest = argv.slice(1);
+
+  // resolve mode once per invocation and apply to the local singleton.
+  // failures loading config are non-fatal - fresh machines running `setup`
+  // have no config yet, and mode falls back to "hybrid" (default).
+  try {
+    const cfg = await loadConfig();
+    const resolved = resolveMode(cfg);
+    setModeOverride(resolved.mode);
+  } catch {
+    // leave singleton at its default
+  }
 
   try {
     switch (cmd) {
@@ -163,6 +186,9 @@ async function main() {
         break;
       case "undo":
         await runUndo(rest);
+        break;
+      case "mode":
+        await runMode(rest);
         break;
       default:
         console.error(err(`unknown command: ${cmd}`));
