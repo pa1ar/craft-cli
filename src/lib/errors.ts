@@ -16,6 +16,35 @@ export type CraftErrorKind =
   | "SERVER"
   | "UNKNOWN";
 
+// root endpoints that always exist if the API link URL is valid. a 404 on
+// any of these (exact match, ignoring query string) is much more likely to
+// mean the link URL is dead/expired than "resource not found". we match
+// exactly (no sub-path traversal) so a legitimate 404 on e.g.
+// `/documents/<missing-uuid>` still surfaces as NOT_FOUND.
+const ROOT_PATHS = new Set([
+  "/connection",
+  "/blocks",
+  "/blocks/move",
+  "/blocks/search",
+  "/collections",
+  "/comments",
+  "/documents",
+  "/documents/move",
+  "/documents/search",
+  "/folders",
+  "/folders/move",
+  "/tasks",
+  "/upload",
+  "/whiteboards",
+]);
+
+function isRootPath(path: string): boolean {
+  // path is "VERB /endpoint?query"; strip verb and query for matching
+  const withoutVerb = path.replace(/^(GET|POST|PUT|DELETE|PATCH)\s+/, "");
+  const [pathOnly] = withoutVerb.split("?", 1);
+  return ROOT_PATHS.has(pathOnly ?? "");
+}
+
 export class CraftError extends Error {
   readonly status: number;
   readonly code: string;
@@ -56,8 +85,12 @@ export class CraftError extends Error {
     if (!message) message = `HTTP ${status}`;
 
     let kind: CraftErrorKind;
-    if (status === 401 || status === 403 || code === "INVALID_AUTH_HEADER") {
+    const likelyBadCreds = status === 404 && isRootPath(path) && code !== "NOT_FOUND_ERROR";
+    if (status === 401 || status === 403 || code === "INVALID_AUTH_HEADER" || likelyBadCreds) {
       kind = "AUTH";
+      if (likelyBadCreds) {
+        message = "API link URL is invalid or expired. Regenerate it in Craft and run: craft setup --url <URL> --key <KEY>";
+      }
     } else if (status === 404 || code === "NOT_FOUND_ERROR") {
       kind = "NOT_FOUND";
     } else if (status === 400 || code === "VALIDATION_ERROR" || code === "INVALID_REGEX_ERROR") {
