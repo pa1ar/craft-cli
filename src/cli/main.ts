@@ -27,7 +27,8 @@ import { setModeOverride } from "./local.ts";
 
 const HELP = `craft — Craft Docs CLI
 Repo: https://github.com/pa1ar/craft-cli
-Agent docs / recipes / caveats: <repo>/skill/SKILL.md
+
+AI agents: read skill/SKILL.md (or ~/.claude/skills/craft-cli/SKILL.md) before non-trivial use.
 
 Usage: craft <command> [args]
 
@@ -37,7 +38,7 @@ Quick start (fresh machine)
   3. craft whoami                            verify
 
 Setup
-  setup --url URL --key KEY [--profile NAME]   store credentials (verified)
+  setup --url URL --key KEY [--name PROFILE]   store credentials (verified)
   whoami                                        show active profile + space
   profiles {list|use|rm}                        manage profiles
   mode [api|hybrid]                             show or set read mode (hybrid default)
@@ -63,7 +64,7 @@ Write
   docs mv <id>... --to folder|unsorted|templates|ID
   docs rm <id>...                                (soft-delete → trash)
   blocks append <docId|--date DATE> --markdown STR   (or --file F | -)
-  blocks insert <parentId|--date DATE> --json FILE
+  blocks insert <parentId|--date DATE> --file FILE   (typed block JSON; r.craft.do media auto-sets uploaded:true + mimeType)
   blocks update <id> --markdown STR
   blocks rm <id>...
   patch <docId> --old STR --new STR       find and replace in blocks (or pipe old\\n---\\nnew)
@@ -200,7 +201,19 @@ async function main() {
       console.error(err(`[${e.kind}] ${e.status} ${e.path}`));
       console.error(err(`  ${e.message.split(": ").slice(1).join(": ") || e.message}`));
       if (e.details) {
-        console.error(err(`  details: ${JSON.stringify(e.details).slice(0, 300)}`));
+        // validation errors come back as an array of {code, path, message}.
+        // print them as readable field-path bullets instead of raw JSON so
+        // callers (especially scripts driving collections) can see which
+        // field is wrong without grepping.
+        if (Array.isArray(e.details)) {
+          for (const d of e.details as any[]) {
+            const path = Array.isArray(d?.path) ? d.path.join(".") : d?.path ?? "";
+            const msg = d?.message ?? d?.code ?? JSON.stringify(d);
+            console.error(err(`  - ${path ? path + ": " : ""}${msg}`));
+          }
+        } else {
+          console.error(err(`  details: ${JSON.stringify(e.details).slice(0, 300)}`));
+        }
       }
       process.exit(e.toExitCode());
     }

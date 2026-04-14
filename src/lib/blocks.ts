@@ -15,6 +15,62 @@ export interface BlockInsert {
   url?: string;
   altText?: string;
   font?: string;
+  // media-specific (image, video, file)
+  uploaded?: boolean;
+  mimeType?: string;
+  fileName?: string;
+  fileSize?: number;
+  size?: string;
+  width?: number;
+  aspectRatio?: number;
+  // richUrl
+  title?: string;
+  description?: string;
+  // text/list/page
+  listStyle?: string;
+  indentationLevel?: number;
+  decorations?: string[];
+  color?: string;
+  lineStyle?: string;
+  // code
+  rawCode?: string;
+  language?: string;
+  // passthrough — API accepts additional optional fields
+  [key: string]: unknown;
+}
+
+/**
+ * Pre-process blocks before insert: for image/file blocks whose URL points at Craft's
+ * private CDN (r.craft.do), the API requires `uploaded: true` and a `mimeType` —
+ * otherwise it tries to re-fetch the asset and 404s, because r.craft.do is scoped to
+ * the original uploader's auth. Video blocks accept the URL alone; we still default
+ * uploaded+mimeType for consistency. Recurses into nested `content`.
+ * Users can override by passing their own `uploaded` / `mimeType`.
+ */
+export function normalizeCraftMediaBlocks(blocks: BlockInsert[]): BlockInsert[] {
+  const defaultMime = (type: string | undefined): string => {
+    if (type === "image") return "image/jpeg";
+    if (type === "video") return "video/mp4";
+    if (type === "file") return "application/octet-stream";
+    return "application/octet-stream";
+  };
+  const isCraftHosted = (url: string | undefined): boolean =>
+    typeof url === "string" && url.startsWith("https://r.craft.do/");
+  return blocks.map((b) => {
+    const needsNorm =
+      (b.type === "image" || b.type === "file" || b.type === "video") &&
+      isCraftHosted(b.url);
+    const patch = needsNorm
+      ? {
+          uploaded: b.uploaded ?? true,
+          mimeType: b.mimeType ?? defaultMime(b.type),
+        }
+      : {};
+    const content = b.content
+      ? normalizeCraftMediaBlocks(b.content as BlockInsert[])
+      : undefined;
+    return content ? { ...b, ...patch, content } : { ...b, ...patch };
+  });
 }
 
 export interface BlockUpdate {
@@ -74,7 +130,7 @@ export function makeBlocks(c: CraftClient) {
     /** POST /blocks — insert structured blocks */
     async insert(blocks: BlockInsert[], position: Position): Promise<ItemsResponse<Block>> {
       return c.request("POST", "/blocks", {
-        body: { blocks, position: assertExplicitPosition(position) },
+        body: { blocks: normalizeCraftMediaBlocks(blocks), position: assertExplicitPosition(position) },
       });
     },
 

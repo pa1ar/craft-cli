@@ -58,9 +58,9 @@ export async function runCollections(argv: string[]) {
 }
 
 async function runSchema(argv: string[]) {
-  const sub = argv[0];
-  const rest = argv.slice(1);
-  const args = parseWithGlobals(rest, {
+  // parse flags first so sub-verb detection is flag-order independent.
+  // `col schema <id>` is a get. only `set` is a true sub-subcommand.
+  const args = parseWithGlobals(argv, {
     flags: {
       format: { type: "string" },
       file: { type: "string" },
@@ -68,8 +68,10 @@ async function runSchema(argv: string[]) {
   });
   const { client } = await buildClient(args);
 
-  if (sub === "set") {
-    const id = args.positional[0];
+  const isSet = args.positional[0] === "set";
+  const id = isSet ? args.positional[1] : args.positional[0];
+
+  if (isSet) {
     if (!id) throw new Error("usage: craft col schema set <id> --file schema.json");
     if (!args.flags.file) throw new Error("--file required");
     const schema = JSON.parse(await Bun.file(args.flags.file as string).text());
@@ -78,22 +80,27 @@ async function runSchema(argv: string[]) {
     return;
   }
 
-  const id = args.positional[0];
   if (!id) throw new Error("usage: craft col schema <id> [--format schema|json-schema-items]");
   const res = await client.collections.getSchema(id, (args.flags.format as any) ?? "json-schema-items");
   console.log(JSON.stringify(res, null, 2));
 }
 
 async function runItems(argv: string[]) {
-  const sub = argv[0];
-  const rest = argv.slice(1);
-  const args = parseWithGlobals(rest, {
+  // parse flags first so sub-verb detection is flag-order independent.
+  // `col items <id>` lists. known verbs consume positional[0]; otherwise
+  // positional[0] is the collection id and we default to list.
+  const args = parseWithGlobals(argv, {
     flags: {
       file: { type: "string" },
       depth: { type: "number" },
     },
   });
   const { client } = await buildClient(args);
+
+  const VERBS = new Set(["ls", "list", "add", "update", "rm", "delete"]);
+  const hasVerb = args.positional[0] !== undefined && VERBS.has(args.positional[0]!);
+  const sub = hasVerb ? args.positional[0] : "list";
+  if (hasVerb) args.positional.shift();
 
   switch (sub) {
     case undefined:

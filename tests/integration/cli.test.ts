@@ -140,4 +140,39 @@ describe("cli e2e", () => {
     const out = JSON.parse(r.stdout);
     expect(out.type).toBe("page");
   }, 30000);
+
+  // regression: bare `col schema <id>` and `col items <id>` must dispatch to
+  // get/list without requiring an explicit sub-verb. a bogus uuid routes
+  // through to the API and must come back as NOT_FOUND (exit 4), proving
+  // the parser didn't short-circuit with a usage error (exit 1).
+  test("col schema <id> dispatches to get with bare id", async () => {
+    const bogus = "00000000-0000-0000-0000-000000000000";
+    const r = await run(["col", "schema", bogus]);
+    expect(r.code).toBe(4);
+    expect(r.stderr).toContain("NOT_FOUND");
+  }, 30000);
+
+  test("col items <id> dispatches to list with bare id", async () => {
+    const bogus = "00000000-0000-0000-0000-000000000000";
+    const r = await run(["col", "items", bogus]);
+    expect(r.code).toBe(4);
+    expect(r.stderr).toContain("NOT_FOUND");
+  }, 30000);
+
+  // flag-order independence: global flags before the sub-verb must not
+  // confuse the parser. `col schema --json set <id>` must still route to
+  // schema update (expects --file, not get).
+  test("col schema --json <id> still routes to get", async () => {
+    const bogus = "00000000-0000-0000-0000-000000000000";
+    const r = await run(["col", "schema", "--json", bogus]);
+    expect(r.code).toBe(4);
+    expect(r.stderr).toContain("NOT_FOUND");
+  }, 30000);
+
+  test("col items --json <id> still routes to list", async () => {
+    const bogus = "00000000-0000-0000-0000-000000000000";
+    const r = await run(["col", "items", "--json", bogus]);
+    expect(r.code).toBe(4);
+    expect(r.stderr).toContain("NOT_FOUND");
+  }, 30000);
 });

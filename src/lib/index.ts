@@ -2,6 +2,7 @@ export { CraftClient, parallel, walkBlocks, findBlocks } from "./client.ts";
 export { CraftError } from "./errors.ts";
 export type * from "./types.ts";
 export type { GetBlockOptions, BlockInsert, BlockUpdate, SearchInDocOpts } from "./blocks.ts";
+export { normalizeCraftMediaBlocks } from "./blocks.ts";
 export type { ListDocsOptions, SearchDocsOptions, DocDestination, NewDocument } from "./documents.ts";
 export type { NewFolder, FolderDestination } from "./folders.ts";
 export type { CollectionSchema, CollectionProperty, NewCollectionItem, UpdateCollectionItem } from "./collections.ts";
