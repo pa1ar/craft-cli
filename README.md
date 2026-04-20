@@ -15,7 +15,7 @@ If you are an AI coding agent landing in a fresh environment and you need to rea
 git clone https://github.com/pa1ar/craft-cli.git ~/dev/craft-cli
 cd ~/dev/craft-cli && ./install.sh
 
-# 2. authenticate - ask the user for URL and API key from Craft → Settings → Developer
+# 2. authenticate - ask the user for URL and API key from Craft → Imagine → New API Connection
 craft setup --url "https://connect.craft.do/links/XXX/api/v1" --key "pdk_..."
 
 # 3. on Linux / headless / any host without the Craft desktop app, persist api-only mode
@@ -65,6 +65,25 @@ This is a personal tool published as-is. I don't work for Craft and don't plan t
 Install from source: run `./install.sh` after cloning, or use the manual steps in the Quick start above.
 
 ## Setup
+
+### Getting your API key
+
+1. Open the Craft app (macOS/iOS) or [craft.do](https://www.craft.do/) in a browser
+2. Go to **Imagine** (the integrations panel)
+3. Click the **+** button (top left) and select **New API Connection**
+4. Choose which documents will be accessible via this connection
+5. Switch **Access Mode** from "Public" to **API Key**
+6. Click **+** next to "API Keys", enter a name, and click **Create**
+7. Copy the key immediately - you won't see it again
+8. Copy the **URL** from the connection panel
+
+![Craft API connection setup](docs/images/craft-api-setup.png)
+
+Then run:
+
+```sh
+craft setup --url "https://connect.craft.do/links/XXX/api/v1" --key "pdk_..."
+```
 
 Credentials stored at `~/.config/craft-cli/config.json` (mode 0600). Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_MODE` (see [Hybrid vs API-only mode](#how-craft-cli-uses-this)), `CRAFT_LOCAL_PATH`.
 
