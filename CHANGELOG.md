@@ -8,6 +8,17 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-01
+
+### Fixed
+- `client.blocks.insert` no longer auto-marks `r.craft.do` media blocks as `uploaded: true`. Those URLs are signed and time-limited; storing them with `uploaded: true` meant the asset displayed "not available" once the signature rotated. The API now re-fetches and re-signs on insert.
+
+### Changed
+- `normalizeCraftMediaBlocks` is now an opt-in helper. It still injects `uploaded: true` + a default `mimeType` for `r.craft.do` blocks, but you only get that behavior if you call it explicitly.
+
+### Internal
+- Dropped obsolete `remotion/` entry from `.gitignore`.
+
 ## [0.1.0] - 2026-05-01
 
 Baseline public release.
@@ -23,5 +34,6 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/pa1ar/craft-cli/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/pa1ar/craft-cli/releases/tag/v0.1.0

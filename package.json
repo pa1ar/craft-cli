@@ -1,6 +1,6 @@
 {
   "name": "@1ar/craft-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Fast CLI wrapping the Craft Docs API. Designed for LLM tool use and Raycast reuse.",
   "type": "module",
   "bin": {
