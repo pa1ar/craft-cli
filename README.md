@@ -10,42 +10,51 @@ Single-binary Bun CLI, AI-agent-first, runs on macOS and Linux. Also exports a T
 
 ---
 
-## For AI agents (quick start)
+## Install (paste this to your AI agent)
 
-If you are an AI coding agent landing in a fresh environment and you need to read or edit the user's Craft Docs vault, this is the entry point. Everything below is copy-pasteable.
+To install craft-cli, paste the block below into your AI coding agent (Claude Code, Codex, OpenCode, Cursor, etc.). The agent will handle clone, build, install, authentication, and skill registration.
 
-```sh
-# 1. clone and install (one command, idempotent, safe to re-run)
-git clone https://github.com/pa1ar/craft-cli.git ~/dev/craft-cli
-cd ~/dev/craft-cli && ./install.sh
+```text
+You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow these steps in order. Stop and ask me if anything is ambiguous, otherwise proceed end-to-end.
 
-# 2. authenticate - ask the user for URL and API key from Craft → Imagine → New API Connection
-craft setup --url "https://connect.craft.do/links/XXX/api/v1" --key "pdk_..."
+1. RUNTIME CHECK
+   Check whether `bun` is on PATH. If yes, continue.
+   If not:
+     - If I have a stated package-manager preference, use that.
+     - Otherwise, install Bun: `curl -fsSL https://bun.sh/install | bash` (do not switch to npm/pnpm/yarn — this project is Bun-first; the build script and binary path assume Bun).
 
-# 3. on Linux / headless / any host without the Craft desktop app, persist api-only mode
-craft mode api
+2. CLONE + BUILD + INSTALL
+   git clone https://github.com/pa1ar/craft-cli.git ~/dev/craft-cli
+   cd ~/dev/craft-cli && ./install.sh
+   If `install.sh` fails or is unavailable, fall back to:
+     bun install && bun run build
+     mkdir -p ~/.local/bin && ln -sf "$PWD/dist/craft" ~/.local/bin/craft
+   Verify `~/.local/bin` is on PATH. Add it to my shell rc if missing (detect zsh vs bash from $SHELL).
 
-# 4. verify
-craft whoami
-```
+3. AUTHENTICATE
+   Ask me for the Craft API URL and API key. I get them from Craft → Imagine → New API Connection. The URL looks like `https://connect.craft.do/links/XXX/api/v1`, the key starts with `pdk_`.
+   Then run: craft setup --url "<URL>" --key "<KEY>"
 
-After install:
-- `skill/SKILL.md` in the repo is the **agent reference** - full command cheatsheet, recipes, caveats, precedence rules. Read it before writing any scripts against the CLI.
-- On a Claude Code host, `install.sh` symlinks `skill/` to `~/.claude/skills/craft-cli` so the skill loads automatically.
-- `craft --help` shows the command surface and quick-start flow.
-- `~/.config/craft-cli/config.json` (mode 0600) stores credentials + persisted mode.
+4. MODE (Linux / headless only)
+   If this host has no Craft desktop app (any Linux box, any remote/headless server), persist API-only mode: `craft mode api`. On macOS with the Craft app installed, skip this — hybrid mode is the default and is faster.
 
-If `install.sh` is unavailable or fails, the manual fallback is:
+5. VERIFY
+   craft whoami            # confirms auth works
+   craft docs ls --limit 3 # confirms reads work
 
-```sh
-bun install && bun run build
-mkdir -p ~/.local/bin
-ln -sf "$PWD/dist/craft" ~/.local/bin/craft
+6. SKILL REGISTRATION
+   The repo ships an agent skill at `skill/SKILL.md` — full command surface, recipes, caveats. Register it with this host so you can load it on demand:
+     - Claude Code: `install.sh` already symlinked it to `~/.claude/skills/craft-cli`. Done.
+     - Codex CLI: symlink `~/dev/craft-cli/skill` to `~/.codex/skills/craft-cli` (create dir if missing).
+     - OpenCode / Cursor / other: place the skill where this host loads agent skills from. If you do not know the canonical path for this host, ask me.
+   After registration, read `skill/SKILL.md` once before you write any craft-* commands — it contains the precedence rules, exit codes, and the gotchas that the API does not document.
 
-# only if ~/.claude exists - use -sfn so re-running doesn't create a
-# circular "skill/skill" symlink inside the existing link target
-[ -d ~/.claude ] && mkdir -p ~/.claude/skills && \
-  ln -sfn "$PWD/skill" ~/.claude/skills/craft-cli
+7. REPORT BACK
+   Tell me:
+     - which mode is active (hybrid vs api-only),
+     - where the binary landed,
+     - where the skill is registered,
+     - any step you skipped and why.
 ```
 
 ---
@@ -66,7 +75,7 @@ Craft has a solid API but no official CLI. AI agents need a fast, predictable, s
 
 This is a personal tool published as-is. I don't work for Craft and don't plan to maintain package manager distributions (Homebrew, npm global, etc.). If Craft wants to adopt or fork this into an official CLI, they're welcome to.
 
-Install from source: run `./install.sh` after cloning, or use the manual steps in the Quick start above.
+Install from source: see the install block above.
 
 ## Setup
 
