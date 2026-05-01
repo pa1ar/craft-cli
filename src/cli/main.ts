@@ -64,7 +64,7 @@ Write
   docs mv <id>... --to folder|unsorted|templates|ID
   docs rm <id>...                                (soft-delete → trash)
   blocks append <docId|--date DATE> --markdown STR   (or --file F | -)
-  blocks insert <parentId|--date DATE> --file FILE   (typed block JSON; r.craft.do media auto-sets uploaded:true + mimeType)
+  blocks insert <parentId|--date DATE> --file FILE   (typed block JSON; pass live r.craft.do URLs, API re-signs them)
   blocks update <id> --markdown STR
   blocks rm <id>...
   patch <docId> --old STR --new STR       find and replace in blocks (or pipe old\\n---\\nnew)

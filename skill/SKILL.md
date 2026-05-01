@@ -59,7 +59,7 @@ craft blocks search <docId> "regex" [--before 2 --after 2 --fetch]
 craft blocks append <docId> --markdown "text"
 craft blocks append --date today --markdown "daily note line"
 echo "## piped content" | craft blocks append <docId> -
-craft blocks insert <docId> --file blocks.json   # typed blocks JSON; r.craft.do media auto-gets uploaded:true + mimeType
+craft blocks insert <docId> --file blocks.json   # typed blocks JSON; r.craft.do URLs must be fresh (signed URLs rotate)
 craft blocks update <blockId> --markdown "new text"
 craft blocks mv <blockId>... --to <pageId>
 craft blocks rm <blockId>...
@@ -289,7 +289,8 @@ craft cat <id1> <id2> <id3>
     - **`docs get` / `blocks get` / `docs daily` include backlinks by default.** In markdown mode they append a `## Backlinks` section; in JSON mode they add a top-level `backlinks` array. Pass `--no-links` to skip when you only need content and want to save ~1-2s.
 14. **`clickableLink` lives at `metadata.clickableLink`** on GET /blocks responses when `fetchMetadata=true`, and at the top level on list/create responses.
 15. **Search freshness lag**: newly created child pages may appear in parent reads (`docs get <parentId> --depth N`) before they show up in `docs search`. If search misses something recent, fetch the parent with depth as a fallback: `craft docs get <parentId> --depth 2` or `craft docs daily --depth 2`.
-16. **Typed block insert fidelity**: `craft blocks insert --file blocks.json` accepts every native block variant (`text`, `page`, `richUrl`, `video`, `image`, `file`, `line`, `code`, `table`) with its native fields (`url`, `title`, `description`, `listStyle`, `textStyle`, `color`, `decorations`, nested `content`, etc.). Use this — not `blocks append --markdown` — when copying blocks between docs, because `append` goes through markdown parsing and loses native types (video/richUrl/image collapse to text). r.craft.do URLs on `image`/`file` blocks require `uploaded: true` + `mimeType` or the API 404s trying to re-fetch the asset; the CLI auto-injects these defaults via `normalizeCraftMediaBlocks` — you can override by passing your own values.
+16. **Typed block insert fidelity**: `craft blocks insert --file blocks.json` accepts every native block variant (`text`, `page`, `richUrl`, `video`, `image`, `file`, `line`, `code`, `table`) with its native fields (`url`, `title`, `description`, `listStyle`, `textStyle`, `color`, `decorations`, nested `content`, etc.). Use this — not `blocks append --markdown` — when copying blocks between docs, because `append` goes through markdown parsing and loses native types (video/richUrl/image collapse to text).
+17. **r.craft.do URLs are signed and time-limited** — they rotate on each `GET /blocks` fetch. When cloning `video`/`image`/`file` blocks between docs, always fetch the source LIVE right before inserting and pass the fresh URL; omit `uploaded` so the API re-fetches and re-signs. If you pass a stale URL with `uploaded: true`, the block will be created but the asset will display "not available" when the signature expires. `normalizeCraftMediaBlocks` is available as an opt-in helper for the rare case where you want to force-store an as-is URL.
 
 ## Library usage (Raycast / Node scripts)
 

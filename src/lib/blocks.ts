@@ -40,12 +40,18 @@ export interface BlockInsert {
 }
 
 /**
- * Pre-process blocks before insert: for image/file blocks whose URL points at Craft's
- * private CDN (r.craft.do), the API requires `uploaded: true` and a `mimeType` —
- * otherwise it tries to re-fetch the asset and 404s, because r.craft.do is scoped to
- * the original uploader's auth. Video blocks accept the URL alone; we still default
- * uploaded+mimeType for consistency. Recurses into nested `content`.
- * Users can override by passing their own `uploaded` / `mimeType`.
+ * Opt-in helper: for image/file/video blocks whose URL is an r.craft.do asset, injects
+ * `uploaded: true` + a default `mimeType`. This tells the API "trust this URL, don't
+ * re-fetch". Use ONLY when you have a fresh, long-lived reference you want preserved
+ * as-is.
+ *
+ * WARNING: r.craft.do URLs are time-limited signed URLs that rotate on every fetch.
+ * If you pass a stale URL with `uploaded: true`, Craft will store it but clicks will
+ * show "not available" when the signature expires. For migrations that copy media
+ * between docs, do NOT use this helper — let the API re-fetch (omit `uploaded`), which
+ * triggers a re-signing pass and returns a fresh URL you can trust.
+ *
+ * Not called automatically by `client.blocks.insert`.
  */
 export function normalizeCraftMediaBlocks(blocks: BlockInsert[]): BlockInsert[] {
   const defaultMime = (type: string | undefined): string => {
@@ -130,7 +136,7 @@ export function makeBlocks(c: CraftClient) {
     /** POST /blocks — insert structured blocks */
     async insert(blocks: BlockInsert[], position: Position): Promise<ItemsResponse<Block>> {
       return c.request("POST", "/blocks", {
-        body: { blocks: normalizeCraftMediaBlocks(blocks), position: assertExplicitPosition(position) },
+        body: { blocks, position: assertExplicitPosition(position) },
       });
     },
 
