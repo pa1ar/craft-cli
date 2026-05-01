@@ -4,7 +4,7 @@ CLI wrapper over the [Craft Docs](https://www.craft.do/) "API for All Docs".
 
 Single-binary Bun CLI, AI-agent-first, runs on macOS and Linux. Also exports a TypeScript library for Raycast and Node scripts.
 
-<video src="https://github.com/pa1ar/craft-cli/raw/refs/heads/main/docs/images/craft-cli-demo.mp4" poster="docs/images/craft-cli-demo-poster.jpg" controls muted playsinline></video>
+![craft-cli demo](docs/images/craft-cli-demo.gif)
 
 ---
 
