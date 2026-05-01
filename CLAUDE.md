@@ -56,3 +56,39 @@ graph LR
 - `docs/local-sqlite-schema.md` - Craft's local data store schema (SQLite FTS5, PlainTextSearch JSON, Realm)
 - `docs/local-performance-results.md` - benchmarks: local reads 1,700x-6,600x faster than API
 - `docs/cli-test-report-2026-04-08.md` - real-world CLI testing report with issues found and fixed
+
+## Maintenance contract
+
+This repo is set up to be vendor-ready (npm-publishable) but Bun-first. Keep it polished without protocol theatre.
+
+### Commits and changelog
+- One change per commit. Bug fix, feature, doc, chore - each one its own commit so `git bisect`, reverts, and changelog accumulation stay clean.
+- Conventional-ish prefixes (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`) - we already use these in history; keep going.
+- Every commit that ships user-visible behavior or DX changes appends a one-liner to `CHANGELOG.md` under `## [Unreleased]`. Internal refactors, test-only changes, doc tweaks can skip the changelog.
+
+### Releases
+- SemVer. Patch for fixes, minor for additive features, major for breaking surface changes.
+- Release procedure (one commit, one tag, one gh release):
+  1. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and add a fresh empty `## [Unreleased]` above it. Update the link refs at the bottom.
+  2. Bump `version` in `package.json`.
+  3. Commit: `release: X.Y.Z`.
+  4. `git tag -a vX.Y.Z -m "X.Y.Z"`.
+  5. `git push origin main --follow-tags`.
+  6. `gh release create vX.Y.Z --notes "$(awk '/^## \[X.Y.Z\]/,/^## \[/{if(!/^## \[/ || /^## \[X.Y.Z\]/)print}' CHANGELOG.md)"` (or paste the relevant changelog section by hand).
+- After every release: ship a matching `/updates/craft-cli-X.Y.Z.md` entry on `~/dev/1ar/1ar-astro` (kind: `update`) linking to `/projects/craft-cli` and the GitHub release. The update post is the public-facing changelog item.
+
+### Issues and PRs
+- Read incoming issues weekly. Triage labels we use (create as needed): `bug`, `enhancement`, `docs`, `wontfix`, `good-first-issue`.
+- For PRs from contributors: check the diff actually does what the PR says, run `bun test` + `bun run typecheck` locally, request a `CHANGELOG.md` Unreleased entry if missing, then merge with squash so the merge commit becomes the single-change unit.
+- Don't gate on style; gate on correctness and on whether `skill/SKILL.md` still reflects the CLI after the change.
+
+### Sync with 1ar.io
+- The "For AI agents" code block in `README.md` is mirrored in `~/dev/1ar/1ar-astro/src/pages/projects/craft-cli.astro`. The two must stay byte-identical. Any edit to the README block requires a matching edit on the website (and vice versa) - flag in the commit message.
+- `1ar-astro/CLAUDE.md` carries the same rule from the website side.
+
+### Distribution stance
+- Personal tool, published as-is. We are not vendoring to npm yet, but the repo is kept in shape that we could (`name`, `version`, `bin`, `exports`, `license` would be the missing pieces - LICENSE file is currently absent, flag if/when we publish).
+- Bun is the canonical toolchain. We do not target npm scripts or `node_modules/.bin` shims.
+
+### Affiliation
+- This is unofficial. Not affiliated with Craft Docs. The README states this near the top - keep it.
