@@ -2,6 +2,14 @@
   "name": "@1ar/craft-cli",
   "version": "0.2.0",
   "description": "Fast CLI wrapping the Craft Docs API. Designed for LLM tool use and Raycast reuse.",
+  "license": "MIT",
+  "author": "Pavel Larionov",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pa1ar/craft-cli.git"
+  },
+  "homepage": "https://github.com/pa1ar/craft-cli",
+  "bugs": "https://github.com/pa1ar/craft-cli/issues",
   "type": "module",
   "bin": {
     "craft": "./dist/craft"

@@ -8,6 +8,13 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Added
+- MIT `LICENSE` file. `package.json` now declares `license: MIT` and adds `author`, `repository`, `homepage`, `bugs` fields - npm-publishable shape.
+
+### Changed
+- README: unaffiliated/unofficial disclaimer near the top.
+- README: "For AI agents" section collapsed into a single paste-to-AI install block. Mirrored on https://1ar.io/projects/craft-cli (see CLAUDE.md "Sync with 1ar.io" rule).
+
 ## [0.2.0] - 2026-05-01
 
 ### Fixed
