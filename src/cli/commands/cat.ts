@@ -5,6 +5,7 @@ import {
   renderBacklinksMarkdown,
 } from "../render.ts";
 import { parallel } from "../../lib/client.ts";
+import { jsonOutForArgs } from "../format.ts";
 
 export async function runCat(argv: string[]) {
   const args = parseWithGlobals(argv, {
@@ -32,7 +33,7 @@ export async function runCat(argv: string[]) {
   });
 
   if (args.flags.json) {
-    console.log(JSON.stringify(results.map((r) => r.payload), null, 2));
+    console.log(jsonOutForArgs(results.map((r) => r.payload), args.flags));
     return;
   }
 

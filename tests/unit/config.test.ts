@@ -3,7 +3,7 @@ import { test, expect, describe, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveMode, type Config } from "../../src/cli/config.ts";
+import { resolveMode, resolveSource, type Config } from "../../src/cli/config.ts";
 
 describe("resolveMode", () => {
   const origEnv = process.env.CRAFT_MODE;
@@ -58,6 +58,43 @@ describe("resolveMode", () => {
     delete process.env.CRAFT_MODE;
     const cfg: Config = { default: "p1", profiles: { p1: { url: "u", key: "k" } } };
     expect(resolveMode(cfg)).toEqual({ mode: "hybrid", source: "default" });
+  });
+});
+
+describe("resolveSource", () => {
+  const origSource = process.env.CRAFT_SOURCE;
+  const origMode = process.env.CRAFT_MODE;
+
+  afterEach(() => {
+    if (origSource === undefined) delete process.env.CRAFT_SOURCE;
+    else process.env.CRAFT_SOURCE = origSource;
+    if (origMode === undefined) delete process.env.CRAFT_MODE;
+    else process.env.CRAFT_MODE = origMode;
+  });
+
+  test("defaults to auto", () => {
+    delete process.env.CRAFT_SOURCE;
+    delete process.env.CRAFT_MODE;
+    expect(resolveSource(null)).toEqual({ source: "auto", setting: "default" });
+  });
+
+  test("CRAFT_SOURCE wins over legacy CRAFT_MODE", () => {
+    process.env.CRAFT_SOURCE = "local";
+    process.env.CRAFT_MODE = "api";
+    expect(resolveSource(null)).toEqual({ source: "local", setting: "env" });
+  });
+
+  test("legacy hybrid maps to auto", () => {
+    delete process.env.CRAFT_SOURCE;
+    process.env.CRAFT_MODE = "hybrid";
+    expect(resolveSource(null)).toEqual({ source: "auto", setting: "legacy-env", legacyMode: "hybrid" });
+  });
+
+  test("config.source wins over legacy config.mode", () => {
+    delete process.env.CRAFT_SOURCE;
+    delete process.env.CRAFT_MODE;
+    const cfg: Config = { default: "p1", profiles: {}, source: "local", mode: "api" };
+    expect(resolveSource(cfg)).toEqual({ source: "local", setting: "config" });
   });
 });
 

@@ -10,6 +10,7 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ### Added
 - MIT `LICENSE` file. `package.json` now declares `license: MIT` and adds `author`, `repository`, `homepage`, `bugs` fields - npm-publishable shape.
+- Agent-first CLI improvements: `craft source`, `doctor`, `agent-context`, `which`, JSON `--select`, and broader write-command `--dry-run` previews.
 
 ### Changed
 - README: unaffiliated/unofficial disclaimer near the top.

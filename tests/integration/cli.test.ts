@@ -7,14 +7,11 @@ import { join } from "node:path";
 
 const URL = process.env.CRAFT_URL || process.env.ALL_DOCS_MAIN_URL;
 const KEY = process.env.CRAFT_KEY || process.env.ALL_DOCS_MAIN_API_KEY;
-
-if (!URL || !KEY) {
-  throw new Error("CRAFT_URL + CRAFT_KEY (or ALL_DOCS_MAIN_*) required");
-}
+const HAS_CREDS = Boolean(URL && KEY);
 
 // run via `bun src/cli/main.ts` not the compiled binary — faster iteration and same code
 const CLI = [process.execPath, join(import.meta.dir, "..", "..", "src/cli/main.ts")];
-const env = { ...process.env, CRAFT_URL: URL, CRAFT_KEY: KEY };
+const env = { ...process.env, CRAFT_URL: URL ?? "http://localhost", CRAFT_KEY: KEY ?? "pdk_missing" };
 
 async function run(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
   const proc = Bun.spawn({
@@ -34,28 +31,32 @@ async function run(args: string[]): Promise<{ stdout: string; stderr: string; co
 let sandboxId: string;
 let seedDocId: string;
 
-const client = new CraftClient({ url: URL, key: KEY });
+const client = new CraftClient({ url: URL ?? "http://localhost", key: KEY ?? "pdk_missing" });
 
-beforeAll(async () => {
-  const folders = await client.folders.list();
-  const existing = folders.items.find((f) => f.name === "__cli-tests__");
-  if (existing) sandboxId = existing.id;
-  else {
-    const created = await client.folders.create([{ name: "__cli-tests__" }]);
-    sandboxId = created.items[0]!.id;
-  }
-  const doc = await client.documents.create([{ title: `cli-test ${Date.now()}` }], {
-    folderId: sandboxId,
+if (HAS_CREDS) {
+  beforeAll(async () => {
+    const folders = await client.folders.list();
+    const existing = folders.items.find((f) => f.name === "__cli-tests__");
+    if (existing) sandboxId = existing.id;
+    else {
+      const created = await client.folders.create([{ name: "__cli-tests__" }]);
+      sandboxId = created.items[0]!.id;
+    }
+    const doc = await client.documents.create([{ title: `cli-test ${Date.now()}` }], {
+      folderId: sandboxId,
+    });
+    seedDocId = doc.items[0]!.id;
   });
-  seedDocId = doc.items[0]!.id;
-});
 
-afterAll(async () => {
-  try { await client.documents.delete([seedDocId]); } catch {}
-  try { await client.folders.delete([sandboxId]); } catch {}
-});
+  afterAll(async () => {
+    try { await client.documents.delete([seedDocId]); } catch {}
+    try { await client.folders.delete([sandboxId]); } catch {}
+  });
+}
 
-describe("cli e2e", () => {
+const describeLive = HAS_CREDS ? describe : describe.skip;
+
+describeLive("cli e2e", () => {
   test("whoami --json", async () => {
     const r = await run(["whoami", "--json"]);
     expect(r.code).toBe(0);

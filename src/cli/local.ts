@@ -1,26 +1,34 @@
 // singleton local store for CLI commands. lazy-init, cached.
 
 import { discoverLocalStore, type LocalStore } from "../lib/local-db.ts";
-import type { Mode } from "./config.ts";
+import type { Source } from "./config.ts";
 
 let _store: LocalStore | null | undefined; // undefined = not yet tried
-let _modeOverride: Mode = "hybrid";
+let _sourceOverride: Source = "auto";
 
-/** set persistent mode override. main.ts calls this once at startup
- * after resolving CRAFT_MODE env + config.mode. "api" makes getLocalStore
- * always return null without invoking discovery. switching modes invalidates
+/** set persistent source override. main.ts calls this once at startup.
+ * "api" makes getLocalStore always return null without invoking discovery.
+ * switching sources invalidates
  * any cached discovery result so the next getLocalStore() call sees the new
- * mode cleanly. */
-export function setModeOverride(mode: Mode): void {
-  _modeOverride = mode;
+ * source cleanly. */
+export function setSourceOverride(source: Source): void {
+  _sourceOverride = source;
   // close any open handle before invalidating the cache
   if (_store) _store.close();
   _store = undefined;
 }
 
-export function getLocalStore(opts?: { forceApi?: boolean; spaceId?: string }): LocalStore | null {
-  if (opts?.forceApi) return null;
-  if (_modeOverride === "api") return null;
+export function setModeOverride(mode: "hybrid" | "api"): void {
+  setSourceOverride(mode === "api" ? "api" : "auto");
+}
+
+export function getSourceOverride(): Source {
+  return _sourceOverride;
+}
+
+export function getLocalStore(opts?: { source?: Source; forceApi?: boolean; spaceId?: string }): LocalStore | null {
+  const source = opts?.forceApi ? "api" : (opts?.source ?? _sourceOverride);
+  if (source === "api") return null;
   if (_store !== undefined) return _store;
 
   _store = discoverLocalStore(opts?.spaceId);
@@ -35,7 +43,7 @@ export function closeLocalStore(): void {
 // test hook only — lets tests reset the singleton between cases.
 export function __resetLocalStoreForTests(): void {
   _store = undefined;
-  _modeOverride = "hybrid";
+  _sourceOverride = "auto";
 }
 
 // test hook only — lets tests seed the singleton with a fake store so they

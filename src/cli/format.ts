@@ -4,8 +4,63 @@ export function jsonOut(data: unknown): string {
   return JSON.stringify(data, null, 2);
 }
 
+export function jsonOutForArgs(data: unknown, flags: Record<string, unknown>): string {
+  const select = typeof flags.select === "string" ? flags.select : undefined;
+  const projected = select ? projectFields(data, select) : data;
+  return JSON.stringify(projected, null, 2);
+}
+
 export function compactJson(data: unknown): string {
   return JSON.stringify(data);
+}
+
+export function projectFields(data: unknown, select: string): unknown {
+  const paths = select
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (paths.length === 0) return data;
+  return projectValue(data, paths);
+}
+
+function projectValue(value: unknown, paths: string[]): unknown {
+  if (Array.isArray(value)) return value.map((item) => projectValue(item, paths));
+  if (!value || typeof value !== "object") return value;
+  const obj = value as Record<string, unknown>;
+  const selectsTopLevel = paths.some((path) => {
+    const top = path.split(".")[0];
+    return top !== undefined && top in obj;
+  });
+  if (Array.isArray(obj.items) && !selectsTopLevel) {
+    return { ...obj, items: obj.items.map((item) => projectValue(item, paths)) };
+  }
+  const out: Record<string, unknown> = {};
+  for (const path of paths) {
+    const found = getPath(obj, path.split("."));
+    if (found.exists) setPath(out, path.split("."), found.value);
+  }
+  return out;
+}
+
+function getPath(obj: unknown, parts: string[]): { exists: boolean; value?: unknown } {
+  let cur = obj;
+  for (const part of parts) {
+    if (!cur || typeof cur !== "object" || !(part in cur)) return { exists: false };
+    cur = (cur as Record<string, unknown>)[part];
+  }
+  return { exists: true, value: cur };
+}
+
+function setPath(obj: Record<string, unknown>, parts: string[], value: unknown): void {
+  let cur = obj;
+  for (const [index, part] of parts.entries()) {
+    if (index === parts.length - 1) {
+      cur[part] = value;
+      return;
+    }
+    if (!cur[part] || typeof cur[part] !== "object") cur[part] = {};
+    cur = cur[part] as Record<string, unknown>;
+  }
 }
 
 /** Simple table: align columns, one row per object. */

@@ -1,6 +1,7 @@
 // escape hatch — call any path with any method
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { readStdin } from "../args.ts";
+import { jsonOutForArgs } from "../format.ts";
 
 export async function runRaw(argv: string[]) {
   const args = parseWithGlobals(argv, {
@@ -28,5 +29,5 @@ export async function runRaw(argv: string[]) {
 
   const { client } = await buildClient(args);
   const res = await client.request(method.toUpperCase(), path, { query, body });
-  console.log(typeof res === "string" ? res : JSON.stringify(res, null, 2));
+  console.log(typeof res === "string" ? res : jsonOutForArgs(res, { ...args.flags, json: true }));
 }

@@ -1,7 +1,7 @@
 // craft log [docId] - show mutation history
 import { parseWithGlobals } from "../client-factory.ts";
 import { getJournal } from "../journal-singleton.ts";
-import { table, dim } from "../format.ts";
+import { table, dim, jsonOutForArgs } from "../format.ts";
 
 export async function runLog(argv: string[]) {
   const args = parseWithGlobals(argv, {
@@ -21,7 +21,7 @@ export async function runLog(argv: string[]) {
   });
 
   if (args.flags.json) {
-    console.log(JSON.stringify(mutations, null, 2));
+    console.log(jsonOutForArgs(mutations, args.flags));
     return;
   }
 

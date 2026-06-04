@@ -1,6 +1,6 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { readStdin } from "../args.ts";
-import { table, err } from "../format.ts";
+import { table, err, jsonOutForArgs } from "../format.ts";
 
 export async function runCollections(argv: string[]) {
   const sub = argv[0];
@@ -28,7 +28,7 @@ export async function runCollections(argv: string[]) {
     case "ls":
     case "list": {
       const res = await client.collections.list(args.flags.doc);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : table(res.items as any));
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : table(res.items as any));
       return;
     }
     case "mk":
@@ -36,19 +36,30 @@ export async function runCollections(argv: string[]) {
       if (!args.flags.file) throw new Error("usage: craft col mk --file schema.json --parent DOCID");
       if (!args.flags.parent) throw new Error("--parent DOCID required");
       const schema = JSON.parse(await Bun.file(args.flags.file as string).text());
-      const res = await client.collections.create(schema, {
+      const position = {
         position: (args.flags.position as any) ?? "end",
         pageId: args.flags.parent as string,
-      });
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `created ${res.collectionBlockId}`);
+      };
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.create", schema, position };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : "dry-run: would create collection");
+        return;
+      }
+      const res = await client.collections.create(schema, position);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `created ${res.collectionBlockId}`);
       return;
     }
     case "rm": {
       // delete collection = delete its block
       const id = args.positional[0];
       if (!id) throw new Error("usage: craft col rm <collectionBlockId>");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.delete", ids: [id] };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would delete collection ${id}`);
+        return;
+      }
       const res = await client.blocks.delete([id]);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : "deleted");
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : "deleted");
       return;
     }
     default:
@@ -75,14 +86,19 @@ async function runSchema(argv: string[]) {
     if (!id) throw new Error("usage: craft col schema set <id> --file schema.json");
     if (!args.flags.file) throw new Error("--file required");
     const schema = JSON.parse(await Bun.file(args.flags.file as string).text());
+    if (args.flags["dry-run"]) {
+      const preview = { op: "collections.schema.update", id, schema };
+      console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would update schema ${id}`);
+      return;
+    }
     const res = await client.collections.updateSchema(id, schema);
-    console.log(args.flags.json ? JSON.stringify(res, null, 2) : "schema updated");
+    console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : "schema updated");
     return;
   }
 
   if (!id) throw new Error("usage: craft col schema <id> [--format schema|json-schema-items]");
   const res = await client.collections.getSchema(id, (args.flags.format as any) ?? "json-schema-items");
-  console.log(JSON.stringify(res, null, 2));
+  console.log(jsonOutForArgs(res, { ...args.flags, json: true }));
 }
 
 async function runItems(argv: string[]) {
@@ -109,7 +125,7 @@ async function runItems(argv: string[]) {
       const id = args.positional[0];
       if (!id) throw new Error("usage: craft col items <collectionId>");
       const res = await client.collections.getItems(id, args.flags.depth);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : JSON.stringify(res.items, null, 2));
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : JSON.stringify(res.items, null, 2));
       return;
     }
     case "add": {
@@ -118,8 +134,13 @@ async function runItems(argv: string[]) {
       const text = args.flags.file ? await Bun.file(args.flags.file as string).text() : await readStdin();
       const payload = JSON.parse(text);
       const items = Array.isArray(payload) ? payload : payload.items;
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.items.add", collectionId: id, items };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would add ${items.length} collection items`);
+        return;
+      }
       const res = await client.collections.addItems(id, items);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `added ${res.items.length} items`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `added ${res.items.length} items`);
       return;
     }
     case "update": {
@@ -128,16 +149,26 @@ async function runItems(argv: string[]) {
       const text = args.flags.file ? await Bun.file(args.flags.file as string).text() : await readStdin();
       const payload = JSON.parse(text);
       const items = Array.isArray(payload) ? payload : payload.itemsToUpdate ?? payload.items;
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.items.update", collectionId: id, items };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would update ${items.length} collection items`);
+        return;
+      }
       const res = await client.collections.updateItems(id, items);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `updated ${res.items.length} items`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `updated ${res.items.length} items`);
       return;
     }
     case "rm":
     case "delete": {
       const [colId, ...itemIds] = args.positional;
       if (!colId || itemIds.length === 0) throw new Error("usage: craft col items rm <collectionId> <itemId>...");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.items.delete", collectionId: colId, itemIds };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would delete ${itemIds.length} collection items`);
+        return;
+      }
       const res = await client.collections.deleteItems(colId, itemIds);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `deleted ${res.items.length}`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `deleted ${res.items.length}`);
       return;
     }
     default:

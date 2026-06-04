@@ -1,6 +1,6 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { readStdin } from "../args.ts";
-import { err } from "../format.ts";
+import { err, jsonOutForArgs } from "../format.ts";
 
 export async function runWhiteboards(argv: string[]) {
   const sub = argv[0];
@@ -22,11 +22,17 @@ export async function runWhiteboards(argv: string[]) {
     case "mk":
     case "create": {
       if (!args.flags.parent) throw new Error("usage: craft wb mk --parent PAGE_ID");
-      const res = await client.whiteboards.create({
+      const position = {
         position: (args.flags.position as any) ?? "end",
         pageId: args.flags.parent as string,
-      });
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : res.whiteboardBlockId);
+      };
+      if (args.flags["dry-run"]) {
+        const preview = { op: "whiteboards.create", position };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : "dry-run: would create whiteboard");
+        return;
+      }
+      const res = await client.whiteboards.create(position);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : res.whiteboardBlockId);
       return;
     }
     default:
@@ -53,29 +59,46 @@ async function runElements(argv: string[]) {
     case "ls":
     case "get": {
       const res = await client.whiteboards.getElements(wbId);
-      console.log(JSON.stringify(res, null, 2));
+      console.log(jsonOutForArgs(res, { ...args.flags, json: true }));
       return;
     }
     case "add": {
       const text = args.flags.file ? await Bun.file(args.flags.file as string).text() : await readStdin();
       const elements = JSON.parse(text);
-      const res = await client.whiteboards.addElements(wbId, Array.isArray(elements) ? elements : elements.elements);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `added ${res.elements.length}`);
+      const items = Array.isArray(elements) ? elements : elements.elements;
+      if (args.flags["dry-run"]) {
+        const preview = { op: "whiteboards.elements.add", whiteboardId: wbId, elements: items };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would add ${items.length} whiteboard elements`);
+        return;
+      }
+      const res = await client.whiteboards.addElements(wbId, items);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `added ${res.elements.length}`);
       return;
     }
     case "update": {
       const text = args.flags.file ? await Bun.file(args.flags.file as string).text() : await readStdin();
       const elements = JSON.parse(text);
-      const res = await client.whiteboards.updateElements(wbId, Array.isArray(elements) ? elements : elements.elements);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : "updated");
+      const items = Array.isArray(elements) ? elements : elements.elements;
+      if (args.flags["dry-run"]) {
+        const preview = { op: "whiteboards.elements.update", whiteboardId: wbId, elements: items };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would update ${items.length} whiteboard elements`);
+        return;
+      }
+      const res = await client.whiteboards.updateElements(wbId, items);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : "updated");
       return;
     }
     case "rm":
     case "delete": {
       const ids = args.positional.slice(1);
       if (ids.length === 0) throw new Error("usage: craft wb el rm <wbId> <elementId>...");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "whiteboards.elements.delete", whiteboardId: wbId, ids };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would delete ${ids.length} whiteboard elements`);
+        return;
+      }
       const res = await client.whiteboards.deleteElements(wbId, ids);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `deleted ${res.deletedCount}`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `deleted ${res.deletedCount}`);
       return;
     }
     default:

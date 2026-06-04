@@ -1,11 +1,12 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
-import { table, err, dim } from "../format.ts";
+import { table, err, dim, jsonOutForArgs } from "../format.ts";
 import {
   getAndRender,
   renderBacklinksMarkdown,
   attachBacklinksJson,
 } from "../render.ts";
-import { getLocalStore } from "../local.ts";
+import { listLocalDocsSafe, searchLocalDocsSafe } from "../local-safe.ts";
+import { shouldFallbackToApi, shouldTryLocal, sourceFromArgs } from "../source.ts";
 import { $ } from "bun";
 
 export async function runDocs(argv: string[]) {
@@ -29,6 +30,7 @@ export async function runDocs(argv: string[]) {
       title: { type: "string" },
     },
   });
+  const source = sourceFromArgs(args);
 
   // lazy client - only built when API path is needed
   let _client: Awaited<ReturnType<typeof buildClient>>["client"] | undefined;
@@ -41,28 +43,34 @@ export async function runDocs(argv: string[]) {
     case "ls":
     case "list": {
       // try local for simple ls (no filters that require API)
-      const local = getLocalStore({ forceApi: !!args.flags.api });
-      const useLocal = local && !args.flags.location && !args.flags.folder
+      const localEligible = shouldTryLocal(source) && !args.flags.location && !args.flags.folder
         && !args.flags["modified-since"] && !args.flags["created-since"]
         && !args.flags.metadata;
 
-      if (useLocal) {
+      if (localEligible) {
         // enrich with PTS data only for --json (needs isDailyNote, tags)
-        const docs = local.listDocs({ enrich: !!args.flags.json });
-        if (args.flags.json) {
-          console.log(JSON.stringify({ items: docs.map((d) => ({ id: d.id, title: d.title, isDailyNote: d.isDailyNote, tags: d.tags })) }, null, 2));
+        const local = await listLocalDocsSafe({ enrich: !!args.flags.json });
+        if (local.status === "available") {
+          const docs = local.docs;
+          if (args.flags.json) {
+            console.log(jsonOutForArgs({ items: docs.map((d) => ({ id: d.id, title: d.title, isDailyNote: d.isDailyNote, tags: d.tags })) }, args.flags));
+            return;
+          }
+          console.log(
+            table(
+              docs.map((d) => ({
+                id: d.id,
+                title: d.title,
+              }))
+            )
+          );
+          console.error(dim(`\n${docs.length} documents (local)`));
           return;
+        } else if (!shouldFallbackToApi(source)) {
+          throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
         }
-        console.log(
-          table(
-            docs.map((d) => ({
-              id: d.id,
-              title: d.title,
-            }))
-          )
-        );
-        console.error(dim(`\n${docs.length} documents (local)`));
-        return;
+      } else if (!shouldFallbackToApi(source)) {
+        throw new Error("this docs ls query is not supported by --source local; use --source auto or --source api");
       }
 
       const client = await getClient();
@@ -74,7 +82,7 @@ export async function runDocs(argv: string[]) {
         createdDateGte: args.flags["created-since"],
       });
       if (args.flags.json) {
-        console.log(JSON.stringify(res, null, 2));
+        console.log(jsonOutForArgs(res, args.flags));
         return;
       }
       console.log(
@@ -95,27 +103,33 @@ export async function runDocs(argv: string[]) {
       if (!pattern) throw new Error("usage: craft docs search <pattern>");
 
       // try local FTS5 search for simple queries
-      const local = getLocalStore({ forceApi: !!args.flags.api });
-      const useLocal = local && !args.flags["fetch-blocks"] && !args.flags.folder
+      const localEligible = shouldTryLocal(source) && !args.flags["fetch-blocks"] && !args.flags.folder
         && !args.flags.location && !args.flags.ids && !args.flags.include;
 
-      if (useLocal) {
-        const results = local.search(pattern, { entityType: "document" });
-        if (args.flags.json) {
-          console.log(JSON.stringify({
-            items: results.map((r) => ({
-              documentId: r.id,
-              markdown: r.content,
-              blockIds: [r.id],
-            })),
-          }, null, 2));
+      if (localEligible) {
+        const local = await searchLocalDocsSafe(pattern, { entityType: "document" });
+        if (local.status === "available") {
+          const results = local.results;
+          if (args.flags.json) {
+            console.log(jsonOutForArgs({
+              items: results.map((r) => ({
+                documentId: r.id,
+                markdown: r.content,
+                blockIds: [r.id],
+              })),
+            }, args.flags));
+            return;
+          }
+          for (const hit of results) {
+            console.log(`${dim(hit.id)}  ${truncate(hit.content, 140)}`);
+          }
+          console.error(dim(`\n${results.length} matches (local)`));
           return;
+        } else if (!shouldFallbackToApi(source)) {
+          throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
         }
-        for (const hit of results) {
-          console.log(`${dim(hit.id)}  ${truncate(hit.content, 140)}`);
-        }
-        console.error(dim(`\n${results.length} matches (local)`));
-        return;
+      } else if (!shouldFallbackToApi(source)) {
+        throw new Error("this docs search query is not supported by --source local; use --source auto or --source api");
       }
 
       const client = await getClient();
@@ -128,7 +142,7 @@ export async function runDocs(argv: string[]) {
         documentIds: args.flags.ids ? (args.flags.ids as string).split(",") : undefined,
       });
       if (args.flags.json) {
-        console.log(JSON.stringify(res, null, 2));
+        console.log(jsonOutForArgs(res, args.flags));
         return;
       }
       for (const hit of res.items) {
@@ -152,7 +166,7 @@ export async function runDocs(argv: string[]) {
         exhaustive: args.flags.exhaustive,
       });
       if (args.flags.json) {
-        console.log(JSON.stringify(attachBacklinksJson(payload as any, backlinks), null, 2));
+        console.log(jsonOutForArgs(attachBacklinksJson(payload as any, backlinks), args.flags));
       } else {
         process.stdout.write(payload as string);
         if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
@@ -173,7 +187,7 @@ export async function runDocs(argv: string[]) {
         exhaustive: args.flags.exhaustive,
       });
       if (args.flags.json) {
-        console.log(JSON.stringify(attachBacklinksJson(payload as any, backlinks), null, 2));
+        console.log(jsonOutForArgs(attachBacklinksJson(payload as any, backlinks), args.flags));
       } else {
         process.stdout.write(payload as string);
         if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
@@ -191,12 +205,17 @@ export async function runDocs(argv: string[]) {
         : args.flags.location
           ? { destination: args.flags.location as "unsorted" | "templates" }
           : undefined;
+      if (args.flags["dry-run"]) {
+        const preview = { op: "documents.create", items: titles.map((title) => ({ title })), destination };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would create ${titles.length} documents`);
+        return;
+      }
       const client = await getClient();
       const res = await client.documents.create(
         titles.map((title) => ({ title })),
         destination as any
       );
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : table(res.items as any));
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : table(res.items as any));
       return;
     }
 
@@ -209,18 +228,28 @@ export async function runDocs(argv: string[]) {
         to === "unsorted" || to === "templates"
           ? { destination: to as "unsorted" | "templates" }
           : { folderId: to };
+      if (args.flags["dry-run"]) {
+        const preview = { op: "documents.move", ids: args.positional, destination };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would move ${args.positional.length} documents`);
+        return;
+      }
       const client = await getClient();
       const res = await client.documents.move(args.positional, destination);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : "moved");
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : "moved");
       return;
     }
 
     case "rm":
     case "delete": {
       if (args.positional.length === 0) throw new Error("usage: craft docs rm <id>...");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "documents.delete", ids: args.positional };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would delete ${args.positional.length} documents`);
+        return;
+      }
       const client = await getClient();
       const res = await client.documents.delete(args.positional);
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `deleted ${res.items.length}`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `deleted ${res.items.length}`);
       return;
     }
 

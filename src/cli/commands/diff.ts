@@ -1,7 +1,7 @@
 // craft diff <docId|blockId> - compare current state to last journal entry
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { getJournal } from "../journal-singleton.ts";
-import { dim, bold } from "../format.ts";
+import { dim, bold, jsonOutForArgs } from "../format.ts";
 import { walkBlocks } from "../../lib/client.ts";
 
 export async function runDiff(argv: string[]) {
@@ -61,7 +61,7 @@ export async function runDiff(argv: string[]) {
         changes.push({ type: "changed", blockId, old: prev, current: cur });
       }
     }
-    console.log(JSON.stringify({ targetId, lastMutation: last.ts, op: last.op, changes }, null, 2));
+    console.log(jsonOutForArgs({ targetId, lastMutation: last.ts, op: last.op, changes }, args.flags));
     return;
   }
 

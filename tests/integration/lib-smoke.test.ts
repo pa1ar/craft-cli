@@ -9,48 +9,47 @@ const test = (name: string, fn: () => Promise<void> | void) => rawTest(name, fn,
 
 const URL = process.env.CRAFT_URL || process.env.ALL_DOCS_MAIN_URL;
 const KEY = process.env.CRAFT_KEY || process.env.ALL_DOCS_MAIN_API_KEY;
+const HAS_CREDS = Boolean(URL && KEY);
 
-if (!URL || !KEY) {
-  throw new Error(
-    "integration tests need CRAFT_URL + CRAFT_KEY (or ALL_DOCS_MAIN_URL + ALL_DOCS_MAIN_API_KEY) in env"
-  );
-}
-
-const c = new CraftClient({ url: URL, key: KEY });
+const c = new CraftClient({ url: URL ?? "http://localhost", key: KEY ?? "pdk_missing" });
 const SANDBOX = "__cli-tests__";
 
 let sandboxId: string;
 let seedDocId: string;
 
-beforeAll(async () => {
-  // reuse or create sandbox
-  const folders = await c.folders.list();
-  const existing = folders.items.find((f) => f.name === SANDBOX);
-  if (existing) {
-    sandboxId = existing.id;
-  } else {
-    const created = await c.folders.create([{ name: SANDBOX }]);
-    sandboxId = created.items[0]!.id;
-  }
+if (HAS_CREDS) {
+  beforeAll(async () => {
+    // reuse or create sandbox
+    const folders = await c.folders.list();
+    const existing = folders.items.find((f) => f.name === SANDBOX);
+    if (existing) {
+      sandboxId = existing.id;
+    } else {
+      const created = await c.folders.create([{ name: SANDBOX }]);
+      sandboxId = created.items[0]!.id;
+    }
 
-  const doc = await c.documents.create(
-    [{ title: `smoke ${Date.now()}` }],
-    { folderId: sandboxId }
-  );
-  seedDocId = doc.items[0]!.id;
-});
+    const doc = await c.documents.create(
+      [{ title: `smoke ${Date.now()}` }],
+      { folderId: sandboxId }
+    );
+    seedDocId = doc.items[0]!.id;
+  });
 
-afterAll(async () => {
-  // soft-delete doc, drop folder
-  try {
-    await c.documents.delete([seedDocId]);
-  } catch {}
-  try {
-    await c.folders.delete([sandboxId]);
-  } catch {}
-});
+  afterAll(async () => {
+    // soft-delete doc, drop folder
+    try {
+      await c.documents.delete([seedDocId]);
+    } catch {}
+    try {
+      await c.folders.delete([sandboxId]);
+    } catch {}
+  });
+}
 
-describe("lib smoke", () => {
+const describeLive = HAS_CREDS ? describe : describe.skip;
+
+describeLive("lib smoke", () => {
   test("connection returns space info", async () => {
     const info = await c.connection();
     expect(info.space.id).toBeTruthy();
@@ -138,7 +137,7 @@ describe("lib smoke", () => {
   });
 
   test("error shapes normalized: 401 on bad auth", async () => {
-    const bad = new CraftClient({ url: URL, key: "pdk_bogus" });
+    const bad = new CraftClient({ url: URL!, key: "pdk_bogus" });
     try {
       await bad.connection();
       throw new Error("expected throw");

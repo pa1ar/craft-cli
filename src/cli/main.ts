@@ -20,10 +20,14 @@ import { runLog } from "./commands/log.ts";
 import { runDiff } from "./commands/diff.ts";
 import { runPatch } from "./commands/patch.ts";
 import { runUndo } from "./commands/undo.ts";
-import { runMode } from "./commands/mode.ts";
+import { runMode, runSource } from "./commands/mode.ts";
+import { runLocalWorker } from "./commands/local-worker.ts";
+import { runDoctor } from "./commands/doctor.ts";
+import { runAgentContext } from "./commands/agent-context.ts";
+import { runWhich } from "./commands/which.ts";
 import { closeJournal } from "./journal-singleton.ts";
-import { loadConfig, resolveMode } from "./config.ts";
-import { setModeOverride } from "./local.ts";
+import { loadConfig, resolveSource } from "./config.ts";
+import { setSourceOverride } from "./local.ts";
 
 const HELP = `craft — Craft Docs CLI
 Repo: https://github.com/pa1ar/craft-cli
@@ -34,14 +38,16 @@ Usage: craft <command> [args]
 
 Quick start (fresh machine)
   1. craft setup --url <URL> --key <KEY>    (get from Craft → Settings → Developer)
-  2. craft mode api                          on Linux / headless / no Craft app
+  2. craft source api                        on Linux / headless / no Craft app
   3. craft whoami                            verify
 
 Setup
   setup --url URL --key KEY [--name PROFILE]   store credentials (verified)
+  doctor [--json]                               verify auth, API, source, local store
   whoami                                        show active profile + space
   profiles {list|use|rm}                        manage profiles
-  mode [api|hybrid]                             show or set read mode (hybrid default)
+  source [auto|api|local]                       show or set read source (auto default)
+  mode [api|hybrid]                             legacy alias for source auto|api
 
 Read
   folders ls [--tree] [--json]                  list folders
@@ -89,6 +95,8 @@ Links
   links in <blockId> [--text STR] [--exhaustive] backlinks via title search (fast) or full scan
 
 Misc
+  agent-context [--json]                        emit stable JSON manifest for agents
+  which <capability> [--json]                   find command for an intent
   log [docId] [--last N] [--since DATE]              mutation history
   upload <file> (--parent ID | --date D | --sibling ID) [--position start|end|before|after]
   comment <blockId> <text>
@@ -99,13 +107,16 @@ Misc
 Global
   --profile NAME    override active profile
   --json            machine-readable output
-  --api             force API-only for this command (overrides mode + CRAFT_MODE)
+  --source S        read source for this command: auto | api | local
+  --api             shortcut for --source api
+  --select FIELDS   project JSON output to comma-separated fields
   --help            show this help
 
 Env overrides
   CRAFT_URL, CRAFT_KEY    bypass config entirely
   CRAFT_PROFILE           default profile name
-  CRAFT_MODE              override persistent mode: api | hybrid
+  CRAFT_SOURCE            override persistent source: auto | api | local
+  CRAFT_MODE              legacy override: api | hybrid
   CRAFT_LOCAL_PATH        override local Craft database location
 `;
 
@@ -119,13 +130,18 @@ async function main() {
   const cmd = argv[0]!;
   const rest = argv.slice(1);
 
-  // resolve mode once per invocation and apply to the local singleton.
+  if (cmd === "__local") {
+    await runLocalWorker(rest);
+    return;
+  }
+
+  // resolve source once per invocation and apply to the local singleton.
   // failures loading config are non-fatal - fresh machines running `setup`
   // have no config yet, and mode falls back to "hybrid" (default).
   try {
     const cfg = await loadConfig();
-    const resolved = resolveMode(cfg);
-    setModeOverride(resolved.mode);
+    const resolved = resolveSource(cfg);
+    setSourceOverride(resolved.source);
   } catch {
     // leave singleton at its default
   }
@@ -134,6 +150,15 @@ async function main() {
     switch (cmd) {
       case "setup":
         await runSetup(rest);
+        break;
+      case "doctor":
+        await runDoctor(rest);
+        break;
+      case "agent-context":
+        await runAgentContext(rest);
+        break;
+      case "which":
+        await runWhich(rest);
         break;
       case "whoami":
         await runWhoami(rest);
@@ -190,6 +215,9 @@ async function main() {
         break;
       case "mode":
         await runMode(rest);
+        break;
+      case "source":
+        await runSource(rest);
         break;
       default:
         console.error(err(`unknown command: ${cmd}`));

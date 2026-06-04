@@ -35,8 +35,8 @@ You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow
    Ask me for the Craft API URL and API key. I get them from Craft → Imagine → New API Connection. The URL looks like `https://connect.craft.do/links/XXX/api/v1`, the key starts with `pdk_`.
    Then run: craft setup --url "<URL>" --key "<KEY>"
 
-4. MODE (Linux / headless only)
-   If this host has no Craft desktop app (any Linux box, any remote/headless server), persist API-only mode: `craft mode api`. On macOS with the Craft app installed, skip this — hybrid mode is the default and is faster.
+4. SOURCE (Linux / headless only)
+   If this host has no Craft desktop app (any Linux box, any remote/headless server), persist API-only source: `craft source api`. On macOS with the Craft app installed, skip this — `source auto` is the default and reads local first.
 
 5. VERIFY
    craft whoami            # confirms auth works
@@ -51,7 +51,7 @@ You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow
 
 7. REPORT BACK
    Tell me:
-     - which mode is active (hybrid vs api-only),
+     - which source is active (auto vs api vs local),
      - where the binary landed,
      - where the skill is registered,
      - any step you skipped and why.
@@ -98,16 +98,19 @@ Then run:
 craft setup --url "https://connect.craft.do/links/XXX/api/v1" --key "pdk_..."
 ```
 
-Credentials stored at `~/.config/craft-cli/config.json` (mode 0600). Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_MODE` (see [Hybrid vs API-only mode](#how-craft-cli-uses-this)), `CRAFT_LOCAL_PATH`.
+Credentials stored at `~/.config/craft-cli/config.json` (mode 0600). Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_SOURCE` (see [Read source](#how-craft-cli-uses-this)), legacy `CRAFT_MODE`, `CRAFT_LOCAL_PATH`.
 
-On Linux or any host where Craft is not installed, run `craft mode api` after setup to skip local-store discovery entirely.
+On Linux or any host where Craft is not installed, run `craft source api` after setup to skip local-store discovery entirely.
 
 ## Commands
 
 ```
 craft whoami                     identity and space info
+craft doctor --json              auth/API/source/local health check
+craft agent-context              JSON manifest for agents
+craft which <capability>         find command for an intent
 craft profiles list              manage multiple spaces
-craft mode [api|hybrid]          show or persist read mode (hybrid default)
+craft source [auto|api|local]    show or persist read source (auto default)
 
 craft folders ls                 folder tree
 craft folders mk / rm            create / delete folders
@@ -147,7 +150,7 @@ craft log [id] [--last N]            mutation history
 craft raw GET|POST|... /path     escape hatch for any API endpoint
 ```
 
-Global flags: `--json`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--api`.
+Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--source auto|api|local`, `--api`, `--dry-run` on writes.
 
 ## Why this is faster than the API or MCP
 
@@ -295,19 +298,23 @@ graph TD
 
 ### How craft-cli uses this
 
-**Hybrid mode (default on Mac):** `docs ls` and `docs search` read from local SQLite + PlainTextSearch JSON when available. All writes go through the REST API. Falls back to API-only when local data is absent (non-Mac, Craft not installed).
+**Source auto (default):** `docs ls` and `docs search` read from local SQLite + PlainTextSearch JSON when available. All writes go through the REST API. Falls back to API-only when local data is absent (non-Mac, Craft not installed).
 
-**API-only mode:** run `craft mode api` once to persist the setting (stored in `~/.config/craft-cli/config.json`). Use this on Linux or any host where Craft is not installed. Journal, undo, log, and diff keep working — they use `~/.cache/craft-cli/journal.db`, which is cross-platform. Flip back with `craft mode hybrid`, check current state with `craft mode`.
+**Source api:** run `craft source api` once to persist the setting (stored in `~/.config/craft-cli/config.json`). Use this on Linux or any host where Craft is not installed. Journal, undo, log, and diff keep working — they use `~/.cache/craft-cli/journal.db`, which is cross-platform. Flip back with `craft source auto`, check current state with `craft source`.
+
+**Source local:** local-only reads. Fails clearly if Craft Desktop data is unavailable or a query requires API-only filters.
 
 ```
-craft mode                # show current mode + source
-craft mode api            # persist api-only (Linux / headless)
-craft mode hybrid         # persist hybrid (default)
-CRAFT_MODE=api craft ...  # runtime override, one invocation
-craft docs ls --api       # per-command override, still wins over mode
+craft source              # show current source
+craft source api          # persist api-only (Linux / headless)
+craft source auto         # persist local-first with API fallback
+craft source local        # persist local-only
+CRAFT_SOURCE=api craft ...  # runtime override, one invocation
+craft docs ls --source api  # per-command override
+craft docs ls --api         # legacy shortcut for --source api
 ```
 
-Precedence (highest wins): `--api` flag → `CRAFT_MODE` env → persisted `config.mode` → `hybrid` default.
+Precedence (highest wins): `--source` flag → `--api` shortcut → `CRAFT_SOURCE` env → legacy `CRAFT_MODE` env → persisted `config.source` → legacy `config.mode` → `auto` default.
 
 **Mutation journal:** every write command (blocks append/insert/update/rm/mv, tasks add/update/rm, patch) records pre/post state to `~/.cache/craft-cli/journal.db`. Enables `craft diff`, `craft undo`, and `craft log`.
 

@@ -1,5 +1,6 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import type { UploadTarget } from "../../lib/upload.ts";
+import { jsonOutForArgs } from "../format.ts";
 
 export async function runUpload(argv: string[]) {
   const args = parseWithGlobals(argv, {
@@ -29,9 +30,14 @@ export async function runUpload(argv: string[]) {
   }
 
   const ct = (args.flags["content-type"] as string) ?? inferContentType(file);
+  if (args.flags["dry-run"]) {
+    const preview = { op: "upload.file", file, contentType: ct, target, bytes: bytes.byteLength };
+    console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would upload ${file} (${bytes.byteLength} bytes)`);
+    return;
+  }
   const { client } = await buildClient(args);
   const res = await client.upload.file(bytes, target, ct);
-  console.log(args.flags.json ? JSON.stringify(res, null, 2) : `${res.blockId}  ${res.assetUrl}`);
+  console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `${res.blockId}  ${res.assetUrl}`);
 }
 
 function inferContentType(file: string): string {

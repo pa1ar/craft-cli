@@ -2,8 +2,8 @@
 import { parseWithGlobals } from "../client-factory.ts";
 import { CraftClient } from "../../lib/client.ts";
 import { loadConfig, saveConfig, CONFIG_PATH, type Config } from "../config.ts";
-import { discoverLocalStore } from "../../lib/local-db.ts";
-import { bold, err, dim } from "../format.ts";
+import { probeLocalStoreSafe } from "../local-safe.ts";
+import { bold, err, dim, jsonOutForArgs } from "../format.ts";
 
 export async function runSetup(argv: string[]) {
   const args = parseWithGlobals(argv, {
@@ -42,27 +42,34 @@ export async function runSetup(argv: string[]) {
   }
 
   // auto-detect headless on first setup only. never overrides an existing
-  // mode - a user who ran `craft mode api` explicitly should not get
+  // source - a user who ran `craft source api` explicitly should not get
   // silently flipped on re-setup. two-stage probe avoids pinning to api
   // when Craft IS installed but this specific space hasn't synced yet:
   //   1. probe for this space's store - if present, hybrid works now
   //   2. fallback: any local store at all? if yes, Craft is installed,
   //      leave mode unset (hybrid default, per-call graceful fallback)
   //   3. no stores anywhere → truly headless, pin to api
-  if (!existing.mode) {
-    const spaceLocal = discoverLocalStore(info.space.id);
-    if (spaceLocal) {
-      spaceLocal.close();
+  if (!existing.source && !existing.mode) {
+    const spaceLocal = await probeLocalStoreSafe({ spaceId: info.space.id });
+    if (spaceLocal.status === "available") {
+      // hybrid default is fine.
+    } else if (spaceLocal.status === "timeout" || spaceLocal.status === "error") {
+      console.error(
+        `${bold("!")} local Craft probe did not finish - leaving source auto with API fallback`
+      );
     } else {
-      const anyLocal = discoverLocalStore();
-      if (anyLocal) {
-        anyLocal.close();
+      const anyLocal = await probeLocalStoreSafe();
+      if (anyLocal.status === "available") {
         console.error(
-          `${bold("!")} Craft found but space "${info.space.name}" not synced locally yet - hybrid mode will fall back to api until sync catches up`
+          `${bold("!")} Craft found but space "${info.space.name}" not synced locally yet - source auto will fall back to api until sync catches up`
+        );
+      } else if (anyLocal.status === "timeout" || anyLocal.status === "error") {
+        console.error(
+          `${bold("!")} local Craft probe did not finish - leaving source auto with API fallback`
         );
       } else {
-        existing.mode = "api";
-        console.error(`${bold("!")} no local Craft store found - setting mode to api`);
+        existing.source = "api";
+        console.error(`${bold("!")} no local Craft store found - setting source to api`);
       }
     }
   }
@@ -71,8 +78,8 @@ export async function runSetup(argv: string[]) {
 
   console.error(`${bold("✓")} saved profile "${profileName}" to ${CONFIG_PATH}`);
   console.error(dim(`active profile: ${existing.default}`));
-  if (existing.mode === "api") {
-    console.error(dim(`read mode: api (no local Craft app). change with: craft mode hybrid`));
+  if (existing.source === "api" || existing.mode === "api") {
+    console.error(dim("read source: api (no local Craft app). change with: craft source auto"));
   }
 
   // skill path hint for AI agents
@@ -83,6 +90,6 @@ export async function runSetup(argv: string[]) {
   console.error(dim(`agent reference: ${skillPaths[0]}`));
 
   if (args.flags.json) {
-    console.log(JSON.stringify({ profile: profileName, space: info.space, mode: existing.mode ?? "hybrid" }, null, 2));
+    console.log(jsonOutForArgs({ profile: profileName, space: info.space, source: existing.source ?? (existing.mode === "api" ? "api" : "auto") }, args.flags));
   }
 }

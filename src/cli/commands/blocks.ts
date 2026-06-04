@@ -1,6 +1,6 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { parseArgs, readStdin } from "../args.ts";
-import { err, dim } from "../format.ts";
+import { err, dim, jsonOutForArgs } from "../format.ts";
 import { getAndRender, renderBacklinksMarkdown, attachBacklinksJson } from "../render.ts";
 import { getJournal } from "../journal-singleton.ts";
 import type { Position } from "../../lib/types.ts";
@@ -46,7 +46,7 @@ export async function runBlocks(argv: string[]) {
         exhaustive: args.flags.exhaustive,
       });
       if (args.flags.json) {
-        console.log(JSON.stringify(attachBacklinksJson(payload as any, backlinks), null, 2));
+        console.log(jsonOutForArgs(attachBacklinksJson(payload as any, backlinks), args.flags));
       } else {
         process.stdout.write(payload as string);
         if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
@@ -67,7 +67,7 @@ export async function runBlocks(argv: string[]) {
         fetchBlocks: args.flags.fetch,
       });
       if (args.flags.json) {
-        console.log(JSON.stringify(res, null, 2));
+        console.log(jsonOutForArgs(res, args.flags));
         return;
       }
       for (const hit of res.items) {
@@ -87,6 +87,11 @@ export async function runBlocks(argv: string[]) {
       const position = buildTarget(target, args.flags);
       const md = await readMarkdown(args.flags);
       if (!md) throw new Error("usage: craft blocks append <docId>|--date DATE --markdown STR|--file F|-");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "blocks.append", position, markdown: md };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would append markdown to ${(position as any).pageId ?? `daily:${(position as any).date}`}`);
+        return;
+      }
       const res = await client.blocks.append(md, position as any);
       try {
         const journal = getJournal();
@@ -100,7 +105,7 @@ export async function runBlocks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `inserted ${res.items.length} blocks`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `inserted ${res.items.length} blocks`);
       return;
     }
 
@@ -114,6 +119,11 @@ export async function runBlocks(argv: string[]) {
         ? await Bun.file(args.flags.file as string).text()
         : await readStdin();
       const blocks = JSON.parse(text);
+      if (args.flags["dry-run"]) {
+        const preview = { op: "blocks.insert", position, blocks: Array.isArray(blocks) ? blocks : blocks.blocks };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would insert ${(preview.blocks ?? []).length} blocks`);
+        return;
+      }
       const res = await client.blocks.insert(
         Array.isArray(blocks) ? blocks : blocks.blocks,
         position as any
@@ -130,7 +140,7 @@ export async function runBlocks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `inserted ${res.items.length} blocks`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `inserted ${res.items.length} blocks`);
       return;
     }
 
@@ -139,6 +149,11 @@ export async function runBlocks(argv: string[]) {
       if (!id) throw new Error("usage: craft blocks update <id> --markdown STR");
       const markdown = await readMarkdown(args.flags);
       const font = args.flags.font;
+      if (args.flags["dry-run"]) {
+        const preview = { op: "blocks.update", items: [{ id, markdown, font }] };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would update ${id}`);
+        return;
+      }
       let priorState: any = null;
       try {
         priorState = await client.blocks.get(id, { format: "json", maxDepth: 0 });
@@ -160,13 +175,18 @@ export async function runBlocks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : "updated");
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : "updated");
       return;
     }
 
     case "rm":
     case "delete": {
       if (args.positional.length === 0) throw new Error("usage: craft blocks rm <id>...");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "blocks.delete", ids: args.positional };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would delete ${args.positional.length} blocks`);
+        return;
+      }
       let preSnapshots: unknown[] = [];
       try {
         preSnapshots = await Promise.all(
@@ -187,7 +207,7 @@ export async function runBlocks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `deleted ${res.items.length}`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `deleted ${res.items.length}`);
       return;
     }
 
@@ -200,6 +220,11 @@ export async function runBlocks(argv: string[]) {
       const position: Position = date
         ? { position: (args.flags.position as any) ?? "end", date }
         : { position: (args.flags.position as any) ?? "end", pageId: to! };
+      if (args.flags["dry-run"]) {
+        const preview = { op: "blocks.move", ids: args.positional, position };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would move ${args.positional.length} blocks`);
+        return;
+      }
       const res = await client.blocks.move(args.positional, position);
       try {
         const journal = getJournal();
@@ -213,7 +238,7 @@ export async function runBlocks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : "moved");
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : "moved");
       return;
     }
 

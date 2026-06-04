@@ -1,5 +1,5 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
-import { table, err, dim } from "../format.ts";
+import { table, err, dim, jsonOutForArgs } from "../format.ts";
 import { getJournal } from "../journal-singleton.ts";
 import type { TaskScope, TaskLocation } from "../../lib/types.ts";
 
@@ -26,7 +26,7 @@ export async function runTasks(argv: string[]) {
       if (!scope) throw new Error("usage: craft tasks ls <inbox|active|upcoming|logbook|document> [--doc ID]");
       const res = await client.tasks.list(scope, args.flags.doc);
       if (args.flags.json) {
-        console.log(JSON.stringify(res, null, 2));
+        console.log(jsonOutForArgs(res, args.flags));
         return;
       }
       console.log(
@@ -54,6 +54,21 @@ export async function runTasks(argv: string[]) {
         location = { type: "document", documentId: args.flags.doc as string };
       } else throw new Error("--to inbox|daily|doc required");
 
+      if (args.flags["dry-run"]) {
+        const preview = {
+          op: "tasks.add",
+          items: [{
+            markdown: md,
+            location,
+            taskInfo: {
+              scheduleDate: args.flags.schedule,
+              deadlineDate: args.flags.deadline,
+            },
+          }],
+        };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would add task to ${to}`);
+        return;
+      }
       const res = await client.tasks.add([
         {
           markdown: md,
@@ -75,13 +90,29 @@ export async function runTasks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `added ${res.items[0]?.id}`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `added ${res.items[0]?.id}`);
       return;
     }
 
     case "update": {
       const id = args.positional[0];
       if (!id) throw new Error("usage: craft tasks update <id> [--state ...] [--markdown STR] [--schedule D]");
+      if (args.flags["dry-run"]) {
+        const preview = {
+          op: "tasks.update",
+          items: [{
+            id,
+            markdown: args.flags.markdown,
+            taskInfo: {
+              state: args.flags.state,
+              scheduleDate: args.flags.schedule,
+              deadlineDate: args.flags.deadline,
+            },
+          }],
+        };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would update task ${id}`);
+        return;
+      }
       let priorState: unknown = null;
       try {
         // scan multiple scopes - task could be in any of them
@@ -114,13 +145,18 @@ export async function runTasks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : "updated");
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : "updated");
       return;
     }
 
     case "rm":
     case "delete": {
       if (args.positional.length === 0) throw new Error("usage: craft tasks rm <id>...");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "tasks.delete", ids: args.positional };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would delete ${args.positional.length} tasks`);
+        return;
+      }
       let preSnapshots: unknown[] = [];
       try {
         // scan multiple scopes to find tasks before deletion
@@ -145,7 +181,7 @@ export async function runTasks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? JSON.stringify(res, null, 2) : `deleted ${res.items.length}`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `deleted ${res.items.length}`);
       return;
     }
 

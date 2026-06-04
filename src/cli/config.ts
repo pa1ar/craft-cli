@@ -11,33 +11,75 @@ export interface Profile {
   spaceId?: string;
 }
 
+export type Source = "auto" | "api" | "local";
 export type Mode = "hybrid" | "api";
 
 export interface Config {
   default: string;
   profiles: Record<string, Profile>;
-  /** read mode. absent = "hybrid" (default). "api" disables local store reads. */
+  /** canonical read source. absent = "auto" (local when available, else API). */
+  source?: Source;
+  /** legacy read mode. "hybrid" maps to source "auto". kept for existing configs. */
   mode?: Mode;
 }
 
-export type ModeSource = "env" | "config" | "default";
+export type SourceSetting = "env" | "config" | "legacy-env" | "legacy-config" | "default";
+
+export interface ResolvedSource {
+  source: Source;
+  setting: SourceSetting;
+  legacyMode?: Mode;
+}
 
 export interface ResolvedMode {
   mode: Mode;
-  source: ModeSource;
+  source: "env" | "config" | "default";
 }
 
-/** resolve mode with precedence: CRAFT_MODE env > cfg.mode > "hybrid".
- * per-command --api flag precedence is handled at call sites (local.ts forceApi). */
-export function resolveMode(cfg: Config | null): ResolvedMode {
+export function normalizeSource(value: string | undefined): Source | undefined {
+  const raw = value?.trim().toLowerCase();
+  if (raw === "auto" || raw === "api" || raw === "local") return raw;
+  if (raw === "hybrid") return "auto";
+  if (raw === "live") return "api";
+  return undefined;
+}
+
+export function sourceToLegacyMode(source: Source): Mode {
+  return source === "api" ? "api" : "hybrid";
+}
+
+/** resolve source with precedence:
+ * CRAFT_SOURCE env > CRAFT_MODE legacy env > cfg.source > cfg.mode legacy > "auto".
+ * per-command --source/--api precedence is handled by command args. */
+export function resolveSource(cfg: Config | null): ResolvedSource {
+  const sourceEnv = normalizeSource(process.env.CRAFT_SOURCE);
+  if (sourceEnv) {
+    return { source: sourceEnv, setting: "env" };
+  }
   const envRaw = process.env.CRAFT_MODE?.trim().toLowerCase();
   if (envRaw === "api" || envRaw === "hybrid") {
-    return { mode: envRaw, source: "env" };
+    return { source: normalizeSource(envRaw)!, setting: "legacy-env", legacyMode: envRaw };
+  }
+  const cfgSource = normalizeSource(cfg?.source);
+  if (cfgSource) {
+    return { source: cfgSource, setting: "config" };
   }
   if (cfg?.mode === "api" || cfg?.mode === "hybrid") {
-    return { mode: cfg.mode, source: "config" };
+    return { source: normalizeSource(cfg.mode)!, setting: "legacy-config", legacyMode: cfg.mode };
   }
-  return { mode: "hybrid", source: "default" };
+  return { source: "auto", setting: "default" };
+}
+
+/** legacy helper kept for tests/callers that still speak `mode`. */
+export function resolveMode(cfg: Config | null): ResolvedMode {
+  const resolved = resolveSource(cfg);
+  const mode = sourceToLegacyMode(resolved.source);
+  const source = resolved.setting === "env" || resolved.setting === "legacy-env"
+    ? "env"
+    : resolved.setting === "config" || resolved.setting === "legacy-config"
+      ? "config"
+      : "default";
+  return { mode, source };
 }
 
 export const CONFIG_PATH = join(homedir(), ".config", "craft-cli", "config.json");
@@ -63,6 +105,7 @@ export interface Resolved {
   key: string;
   profileName: string;
   spaceName?: string;
+  authSource: "env" | "config";
 }
 
 /** Resolve active profile with priority:
@@ -75,7 +118,7 @@ export async function resolveProfile(explicit?: string): Promise<Resolved> {
   const envUrl = process.env.CRAFT_URL;
   const envKey = process.env.CRAFT_KEY;
   if (envUrl && envKey) {
-    return { url: envUrl, key: envKey, profileName: "env" };
+    return { url: envUrl, key: envKey, profileName: "env", authSource: "env" };
   }
 
   const cfg = await loadConfig();
@@ -90,5 +133,5 @@ export async function resolveProfile(explicit?: string): Promise<Resolved> {
   if (!profile) {
     throw new Error(`profile "${name}" not found. available: ${Object.keys(cfg.profiles).join(", ")}`);
   }
-  return { url: profile.url, key: profile.key, profileName: name, spaceName: profile.spaceName };
+  return { url: profile.url, key: profile.key, profileName: name, spaceName: profile.spaceName, authSource: "config" };
 }

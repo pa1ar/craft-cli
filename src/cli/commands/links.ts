@@ -1,5 +1,5 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
-import { table, err, dim } from "../format.ts";
+import { table, err, dim, jsonOutForArgs } from "../format.ts";
 
 export async function runLinks(argv: string[]) {
   const sub = argv[0];
@@ -22,7 +22,7 @@ export async function runLinks(argv: string[]) {
     case "outgoing": {
       const links = await client.links.outgoing(id);
       if (args.flags.json) {
-        console.log(JSON.stringify(links, null, 2));
+        console.log(jsonOutForArgs(links, args.flags));
         return;
       }
       if (links.length === 0) {
@@ -56,7 +56,7 @@ export async function runLinks(argv: string[]) {
           });
 
       if (args.flags.json) {
-        console.log(JSON.stringify(links, null, 2));
+        console.log(jsonOutForArgs(links, args.flags));
         return;
       }
       if (links.length === 0) {

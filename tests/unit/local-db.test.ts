@@ -187,12 +187,16 @@ afterEach(() => {
 
 describe("discoverLocalStore", () => {
   test("returns null when path does not exist", () => {
-    // monkey-patch homedir would be complex; just verify the function
-    // handles missing containers gracefully by testing with a non-existent spaceId
-    const result = discoverLocalStore(
-      "ffffffff-ffff-ffff-ffff-ffffffffffff",
-    );
-    expect(result).toBeNull();
+    const origPath = process.env.CRAFT_LOCAL_PATH;
+    process.env.CRAFT_LOCAL_PATH =
+      "/tmp/craft-cli-test-nonexistent-" + Date.now();
+    try {
+      const result = discoverLocalStore();
+      expect(result).toBeNull();
+    } finally {
+      if (origPath === undefined) delete process.env.CRAFT_LOCAL_PATH;
+      else process.env.CRAFT_LOCAL_PATH = origPath;
+    }
   });
 
   test("returns null on schema mismatch", () => {

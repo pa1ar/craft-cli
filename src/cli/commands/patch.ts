@@ -2,7 +2,7 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { getJournal } from "../journal-singleton.ts";
 import { readStdin } from "../args.ts";
-import { dim, bold, err } from "../format.ts";
+import { dim, bold, err, jsonOutForArgs } from "../format.ts";
 import { walkBlocks } from "../../lib/client.ts";
 
 export async function runPatch(argv: string[]) {
@@ -92,7 +92,7 @@ export async function runPatch(argv: string[]) {
   }
 
   if (args.flags.json) {
-    console.log(JSON.stringify({ blockId: match.id, old: match.markdown, new: updatedMarkdown }, null, 2));
+    console.log(jsonOutForArgs({ blockId: match.id, old: match.markdown, new: updatedMarkdown }, args.flags));
   } else {
     console.log(`patched ${dim(match.id)}`);
   }

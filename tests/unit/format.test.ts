@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { table, folderTree, stripPageWrapper } from "../../src/cli/format.ts";
+import { table, folderTree, stripPageWrapper, projectFields } from "../../src/cli/format.ts";
 
 describe("table", () => {
   test("empty", () => {
@@ -13,6 +13,35 @@ describe("table", () => {
     expect(out).toContain("id");
     expect(out).toContain("name");
     expect(out).toContain("longer name");
+  });
+});
+
+describe("projectFields", () => {
+  test("projects item arrays", () => {
+    const out = projectFields({
+      items: [
+        { id: "1", title: "One", ignored: true },
+        { id: "2", title: "Two", ignored: true },
+      ],
+      total: 2,
+    }, "id,title");
+    expect(out).toEqual({
+      items: [
+        { id: "1", title: "One" },
+        { id: "2", title: "Two" },
+      ],
+      total: 2,
+    });
+  });
+
+  test("projects nested paths", () => {
+    const out = projectFields({ id: "1", space: { id: "s", name: "Space" }, token: "secret" }, "id,space.name");
+    expect(out).toEqual({ id: "1", space: { name: "Space" } });
+  });
+
+  test("keeps top-level items when selected explicitly", () => {
+    const out = projectFields({ op: "dry-run", items: [{ title: "One" }], ignored: true }, "op,items");
+    expect(out).toEqual({ op: "dry-run", items: [{ title: "One" }] });
   });
 });
 

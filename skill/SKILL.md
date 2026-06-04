@@ -21,17 +21,23 @@ command -v craft >/dev/null && craft whoami
 
 If that fails → `craft setup --url <URL> --key <KEY>`. Credentials live at `~/.config/craft-cli/config.json` (0600). Main profile is already configured for the 1ar space.
 
-Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_MODE` (see Mode section), `CRAFT_LOCAL_PATH`.
+Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_SOURCE` (see Source section), legacy `CRAFT_MODE`, `CRAFT_LOCAL_PATH`, `CRAFT_LOCAL_TIMEOUT_MS`.
 
 ## Command cheatsheet
 
 ```sh
-# identity / profiles / mode
+# identity / profiles / source
+craft doctor --json                    # auth/API/local/source health check
+craft agent-context                    # stable JSON manifest for agents
+craft which backlinks                  # map capability words to commands
 craft whoami
 craft profiles list
-craft mode                            # show current read mode (hybrid | api) + source
-craft mode api                        # persist api-only (Linux, headless, no Craft app)
-craft mode hybrid                     # persist hybrid (Mac with Craft)
+craft source                           # show current read source (auto | api | local)
+craft source api                       # persist api-only (Linux, headless, no Craft app)
+craft source auto                      # persist auto (local if present, API fallback)
+craft source local                     # force local-only; fail if unavailable
+craft mode api                         # legacy alias for source api
+craft mode hybrid                      # legacy alias for source auto
 
 # folders (tree is default)
 craft folders ls
@@ -122,40 +128,47 @@ craft raw GET /connection
 craft raw POST /blocks --body payload.json
 ```
 
-Global flags on every command: `--json` (machine output), `--profile NAME`, `--quiet`, `--api` (force API-only for this command, overrides mode).
+Global flags on every command: `--json` (machine output), `--select id,title` (project JSON fields), `--profile NAME`, `--quiet`, `--source auto|api|local`, `--api` (legacy shortcut for `--source api`), `--dry-run` on write commands.
 
-## Read mode: hybrid vs api-only
+## Read source: auto vs api vs local
 
 On Mac with Craft app installed, the CLI reads from Craft's local SQLite FTS5 database for `docs ls` and `docs search` (1700x faster than API). All writes always go through the API.
 
-**Two modes:**
+**Three sources:**
 
-- **hybrid** (default): try local first, API fallback. Use on Mac with the Craft app running.
+- **auto** (default): try local first with a bounded helper-process probe; fall back to API. Use on Mac with Craft installed.
 - **api**: never touch local, every read hits the API. Use on Linux, Docker containers, or any host where Craft is not installed. Slower reads but identical behavior; journal (undo/log/diff) keeps working.
+- **local**: local-only. Fails clearly if Craft Desktop data is unavailable or the query needs API-only filters. Use for debugging local cache behavior.
 
 **How to set it (agent workflow):**
 
 ```sh
-craft mode                # check current mode + source; emits a status block to relay to the user
-craft mode api            # persist api-only in config.json; survives shell restarts
-craft mode hybrid         # persist hybrid
-craft mode --json         # machine-readable status for scripting
+craft source              # check current source; emits a status block to relay to the user
+craft source api          # persist api-only in config.json; survives shell restarts
+craft source auto         # persist local-first with API fallback
+craft source local        # persist local-only
+craft source --json       # machine-readable status for scripting
 ```
 
-`craft mode api` prints a status block the agent should relay to the user — it confirms the persisted state, tells the user journal still works, and shows how to temporarily flip the mode.
+`craft source api` prints a status block the agent should relay to the user — it confirms the persisted state, tells the user journal still works, and shows how to temporarily flip the source.
 
 **Precedence (highest wins):**
-1. Per-command `--api` flag (hardest override, one-shot)
-2. `CRAFT_MODE=api|hybrid` env var (runtime override, one invocation)
-3. Persisted `config.mode` set via `craft mode <mode>`
-4. `hybrid` default when nothing is configured
+1. Per-command `--source auto|api|local`
+2. Per-command `--api` shortcut for `--source api`
+3. `CRAFT_SOURCE=auto|api|local` env var
+4. legacy `CRAFT_MODE=api|hybrid` env var (`hybrid` maps to `auto`)
+5. persisted `config.source` set via `craft source <source>`
+6. legacy `config.mode`
+7. `auto` default when nothing is configured
 
-**When to run `craft mode api`:**
+**When to run `craft source api`:**
 - Linux hosts, Docker containers, any headless box without the Craft desktop app
 - Mac machines where the Craft app is installed but not running / not syncing (prevents stale local reads)
 - CI / scripted environments where you want deterministic API-only behavior
 
-The journal at `~/.cache/craft-cli/journal.db` is cross-platform and always on — `undo`, `log`, and `diff` work in both modes.
+The journal at `~/.cache/craft-cli/journal.db` is cross-platform and always on — `undo`, `log`, and `diff` work with every source.
+
+Hybrid local reads are bounded by `CRAFT_LOCAL_TIMEOUT_MS` (default 1500ms). If local discovery/list/search times out or errors, read commands fall back to the API without printing local document content to logs.
 
 ## Top recipes
 
@@ -277,7 +290,7 @@ craft cat <id1> <id2> <id3>
 4. **The CLI refuses to insert blocks without an explicit target.** The API silently routes `position: end` with no pageId/date to today's daily note — a footgun. The CLI throws before sending.
 5. **`maxDepth: 0` omits the `content` key entirely** (not an empty array). Use `"content" in obj` checks when parsing.
 6. **Error exit codes**: 0 ok, 1 user error, 2 API error, 3 auth, 4 not found. Script accordingly.
-7. **Large list latency**: `craft docs ls` with no filter takes ~3.4s via API. In hybrid mode (Mac with Craft installed), it's instant (~27ms). On Linux / headless hosts, run `craft mode api` once after setup to skip local discovery entirely, or pass `--api` per-command, or set `CRAFT_MODE=api` in the environment.
+7. **Large list latency**: `craft docs ls` with no filter takes ~3.4s via API. In `source auto` on a Mac with Craft installed, it's instant (~27ms). On Linux / headless hosts, run `craft source api` once after setup to skip local discovery entirely, or pass `--source api`/`--api` per-command, or set `CRAFT_SOURCE=api` in the environment.
 8. **Rate limits**: generous. 60 parallel calls tested without 429. Default concurrency in scan pipelines can be 15+.
 9. **Tasks & collections have inconsistent payload keys** (`tasks` vs `tasksToUpdate` vs `idsToDelete`). The CLI abstracts this — you don't need to care unless you use `craft raw`.
 10. **Partial block updates preserve children.** `craft blocks update <id> --markdown "new"` renames without dropping the sub-tree.
