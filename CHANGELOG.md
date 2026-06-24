@@ -8,6 +8,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-24
+
 ### Added
 - MIT `LICENSE` file. `package.json` now declares `license: MIT` and adds `author`, `repository`, `homepage`, `bugs` fields - npm-publishable shape.
 - Agent-first CLI improvements: `craft source`, `doctor`, `agent-context`, `which`, JSON `--select`, and broader write-command `--dry-run` previews.
@@ -44,6 +46,7 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/pa1ar/craft-cli/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/pa1ar/craft-cli/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/pa1ar/craft-cli/releases/tag/v0.1.0
