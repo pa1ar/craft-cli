@@ -88,6 +88,26 @@ describe("CraftClient.request", () => {
     const res = await client.request<string>("GET", "/blocks", { accept: "text/markdown" });
     expect(res).toBe("<page>content</page>");
   });
+
+  test("reports request timeout clearly", async () => {
+    const client = new CraftClient({
+      url: "https://example/api/v1",
+      key: "test",
+      timeoutMs: 5,
+      retries: 0,
+      fetch: mockFetch((_url, init) => new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        });
+      })),
+    });
+
+    await expect(client.request("GET", "/connection")).rejects.toThrow(
+      "request timed out after 5ms: GET /connection"
+    );
+  });
 });
 
 describe("helpers", () => {

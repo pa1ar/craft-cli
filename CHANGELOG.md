@@ -13,6 +13,7 @@ Each commit should be one change, scoped enough to land in a single line here.
 - Agent-first CLI improvements: `craft source`, `doctor`, `agent-context`, `which`, JSON `--select`, and broader write-command `--dry-run` previews.
 
 ### Changed
+- `craft whoami` and `craft doctor` now use short health-check timeouts instead of waiting through long default API retries on stalled `/connection` calls.
 - README: unaffiliated/unofficial disclaimer near the top.
 - README: "For AI agents" section collapsed into a single paste-to-AI install block. Mirrored on https://1ar.io/projects/craft-cli (see CLAUDE.md "Sync with 1ar.io" rule).
 

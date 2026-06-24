@@ -130,6 +130,8 @@ craft raw POST /blocks --body payload.json
 
 Global flags on every command: `--json` (machine output), `--select id,title` (project JSON fields), `--profile NAME`, `--quiet`, `--source auto|api|local`, `--api` (legacy shortcut for `--source api`), `--dry-run` on write commands.
 
+`craft doctor` and `craft whoami` use short health-check retries/timeouts. If Craft's `/connection` endpoint stalls, they should fail quickly with a clear timeout instead of hanging through normal API retry windows.
+
 ## Read source: auto vs api vs local
 
 On Mac with Craft app installed, the CLI reads from Craft's local SQLite FTS5 database for `docs ls` and `docs search` (1700x faster than API). All writes always go through the API.

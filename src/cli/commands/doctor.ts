@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { parseWithGlobals } from "../client-factory.ts";
+import { parseWithGlobals, HEALTHCHECK_CLIENT_OPTIONS } from "../client-factory.ts";
 import { loadConfig, resolveProfile, resolveSource, CONFIG_PATH } from "../config.ts";
 import { probeLocalStoreSafe } from "../local-safe.ts";
 import { bold, dim, err, jsonOutForArgs } from "../format.ts";
@@ -33,7 +33,7 @@ export async function runDoctor(argv: string[]): Promise<void> {
     };
     try {
       const { CraftClient } = await import("../../lib/client.ts");
-      const client = new CraftClient({ url: profile.url, key: profile.key });
+      const client = new CraftClient({ url: profile.url, key: profile.key, ...HEALTHCHECK_CLIENT_OPTIONS });
       const info = await client.connection();
       api = {
         ok: true,

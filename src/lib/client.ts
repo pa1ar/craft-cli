@@ -113,7 +113,12 @@ export class CraftClient {
     let lastError: unknown;
     for (let attempt = 0; attempt <= this.retries; attempt++) {
       const ac = new AbortController();
-      const timer = setTimeout(() => ac.abort(), opts.timeoutMs ?? this.timeoutMs);
+      const timeoutMs = opts.timeoutMs ?? this.timeoutMs;
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        ac.abort();
+      }, timeoutMs);
 
       try {
         const res = await this.fetchFn(url, {
@@ -164,16 +169,23 @@ export class CraftClient {
       } catch (e) {
         clearTimeout(timer);
         if (e instanceof CraftError) throw e;
-        lastError = e;
+        const requestError = isAbortError(e) || timedOut
+          ? new Error(`request timed out after ${timeoutMs}ms: ${method} ${path}`)
+          : e;
+        lastError = requestError;
         if (attempt < this.retries) {
           await sleep(this.backoffBaseMs * Math.pow(2, attempt));
           continue;
         }
-        throw e;
+        throw requestError;
       }
     }
     throw lastError;
   }
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
 function sleep(ms: number): Promise<void> {

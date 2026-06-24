@@ -1,9 +1,9 @@
-import { parseWithGlobals, buildClient } from "../client-factory.ts";
+import { parseWithGlobals, buildClient, HEALTHCHECK_CLIENT_OPTIONS } from "../client-factory.ts";
 import { bold, dim, jsonOutForArgs } from "../format.ts";
 
 export async function runWhoami(argv: string[]) {
   const args = parseWithGlobals(argv);
-  const { client, profile } = await buildClient(args);
+  const { client, profile } = await buildClient(args, HEALTHCHECK_CLIENT_OPTIONS);
   const info = await client.connection();
 
   if (args.flags.json) {

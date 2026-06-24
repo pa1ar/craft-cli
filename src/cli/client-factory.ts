@@ -1,12 +1,23 @@
 // shared: resolve profile and build a CraftClient for a command.
-import { CraftClient } from "../lib/client.ts";
+import { CraftClient, type CraftClientOptions } from "../lib/client.ts";
 import { resolveProfile } from "./config.ts";
 import { parseArgs, type ParsedArgs } from "./args.ts";
 
-export async function buildClient(args: ParsedArgs): Promise<{ client: CraftClient; profile: string }> {
+type ClientTuning = Pick<CraftClientOptions, "timeoutMs" | "retries" | "backoffBaseMs">;
+
+export const HEALTHCHECK_CLIENT_OPTIONS: ClientTuning = {
+  timeoutMs: 5000,
+  retries: 1,
+  backoffBaseMs: 250,
+};
+
+export async function buildClient(
+  args: ParsedArgs,
+  options: ClientTuning = {}
+): Promise<{ client: CraftClient; profile: string }> {
   const explicitProfile = typeof args.flags.profile === "string" ? args.flags.profile : undefined;
   const resolved = await resolveProfile(explicitProfile);
-  const client = new CraftClient({ url: resolved.url, key: resolved.key });
+  const client = new CraftClient({ url: resolved.url, key: resolved.key, ...options });
   return { client, profile: resolved.profileName };
 }
 
