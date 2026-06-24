@@ -11,6 +11,7 @@ Each commit should be one change, scoped enough to land in a single line here.
 ### Added
 - MIT `LICENSE` file. `package.json` now declares `license: MIT` and adds `author`, `repository`, `homepage`, `bugs` fields - npm-publishable shape.
 - Agent-first CLI improvements: `craft source`, `doctor`, `agent-context`, `which`, JSON `--select`, and broader write-command `--dry-run` previews.
+- Demand-loaded `craft skills` command group plus bundled `media-analyze` skill and `craft media analyze <blockId>` alias.
 
 ### Changed
 - `craft whoami` and `craft doctor` now use short health-check timeouts instead of waiting through long default API retries on stalled `/connection` calls.

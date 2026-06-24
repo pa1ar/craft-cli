@@ -1,0 +1,18 @@
+{
+  "skill": { "name": "media-analyze", "root": "/repo/skills/media-analyze", "source": "bundled" },
+  "command": { "name": "analyze", "args": ["block_123"] },
+  "flags": {},
+  "limits": { "maxCostEur": 1 },
+  "craft": {
+    "sourceBlock": {
+      "id": "block_123",
+      "markdown": "Demo video https://r.craft.do/example.mp4",
+      "json": {
+        "id": "block_123",
+        "type": "video",
+        "url": "https://r.craft.do/example.mp4",
+        "markdown": "Demo video"
+      }
+    }
+  }
+}

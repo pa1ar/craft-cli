@@ -25,6 +25,8 @@ import { runLocalWorker } from "./commands/local-worker.ts";
 import { runDoctor } from "./commands/doctor.ts";
 import { runAgentContext } from "./commands/agent-context.ts";
 import { runWhich } from "./commands/which.ts";
+import { runSkills } from "./commands/skills.ts";
+import { runMedia } from "./commands/media.ts";
 import { closeJournal } from "./journal-singleton.ts";
 import { loadConfig, resolveSource } from "./config.ts";
 import { setSourceOverride } from "./local.ts";
@@ -103,6 +105,8 @@ Misc
   wb mk --parent ID
   wb el {ls|add|update|rm} <wbId> [...]
   raw <METHOD> <path> [--query k=v] [--body FILE|-] [--header k:v]
+  skills {ls|search|show|validate|run} [...]         demand-loaded automation skills
+  media analyze <blockId> [--estimate] [--max-cost EUR]  analyze media block via bundled skill
 
 Global
   --profile NAME    override active profile
@@ -159,6 +163,12 @@ async function main() {
         break;
       case "which":
         await runWhich(rest);
+        break;
+      case "skills":
+        await runSkills(rest);
+        break;
+      case "media":
+        await runMedia(rest);
         break;
       case "whoami":
         await runWhoami(rest);

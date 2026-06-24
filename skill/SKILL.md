@@ -123,12 +123,44 @@ craft comment <blockId> "nice point #by/claude"
 craft wb mk --parent <docId>
 craft wb el add <wbId> --file elements.json
 
+# skills — demand-loaded automations
+craft skills ls
+craft skills search media
+craft skills show media-analyze
+craft skills validate media-analyze
+craft skills run media-analyze analyze <blockId> --estimate
+
+# curated media alias
+craft media analyze <blockId>
+craft media analyze <blockId> --estimate
+craft media analyze <blockId> --max-cost 0.50 --json
+
 # escape hatch for any endpoint the CLI doesn't cover yet
 craft raw GET /connection
 craft raw POST /blocks --body payload.json
 ```
 
 Global flags on every command: `--json` (machine output), `--select id,title` (project JSON fields), `--profile NAME`, `--quiet`, `--source auto|api|local`, `--api` (legacy shortcut for `--source api`), `--dry-run` on write commands.
+
+## Skills
+
+`craft skills` discovers bundled repo skills and explicit local skills from `~/.craft-cli/skills`. V1 has no remote/community install flow. Search is manifest keyword search over name, description, tags, and command descriptions.
+
+Skill runtime contract:
+
+- skills execute as subprocesses with structured JSON stdin/stdout.
+- `craft-cli` fetches Craft context for commands that declare a source block.
+- skill code may propose writes, but `craft-cli` performs Craft writes and journal records.
+- default max cost is EUR 1 unless `--max-cost` is passed.
+- `--estimate` returns the manifest estimate without running expensive work.
+
+Bundled media skill:
+
+```sh
+craft media analyze <blockId>
+```
+
+Alias for `craft skills run media-analyze analyze <blockId>`. It downloads media to `~/.cache/craft-cli/media-analyze`, uses OpenAI for generic analysis/transcription, and writes a Craft-visible run block under the source block with status, analysis, transcript when available, contact-sheet path, metadata JSON, and model/cost metadata. Requires `OPENAI_API_KEY`; video/audio extraction needs `ffmpeg`/`ffprobe`.
 
 `craft doctor` and `craft whoami` use short health-check retries/timeouts. If Craft's `/connection` endpoint stalls, they should fail quickly with a clear timeout instead of hanging through normal API retry windows.
 

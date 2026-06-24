@@ -1,0 +1,23 @@
+{
+  "name": "media-analyze",
+  "description": "Analyze Craft media blocks and write generic analysis artifacts back under the source block.",
+  "tags": ["media", "video", "audio", "image", "transcript", "openai", "analysis"],
+  "commands": [
+    {
+      "name": "analyze",
+      "description": "Analyze media attached to a Craft block.",
+      "entry": "scripts/analyze.ts",
+      "args": ["<blockId>"],
+      "sourceBlockArgIndex": 0,
+      "estimatedCostEur": 0.25
+    }
+  ],
+  "permissions": {
+    "network": ["media source URLs", "api.openai.com"],
+    "craft": ["read", "write"],
+    "openai": true,
+    "filesystem": ["read", "write"],
+    "subprocess": ["ffmpeg", "ffprobe"]
+  },
+  "artifacts": ["analysis", "transcript", "contact-sheet", "metadata-json"]
+}

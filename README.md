@@ -148,9 +148,38 @@ craft undo [id] [--force]            revert last mutation
 craft log [id] [--last N]            mutation history
 
 craft raw GET|POST|... /path     escape hatch for any API endpoint
+
+craft skills ls/search/show      discover bundled + ~/.craft-cli/skills automations
+craft skills validate <path|name>
+craft skills run <name> <command> [...args] [--estimate] [--max-cost EUR]
+craft media analyze <blockId>    analyze Craft media with bundled media-analyze skill
 ```
 
 Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--source auto|api|local`, `--api`, `--dry-run` on writes.
+
+## Skills
+
+`craft skills` is a demand-loaded automation layer. V1 discovers curated bundled repo skills plus explicit local skills from `~/.craft-cli/skills`; there is no remote/community install flow. Search is manifest keyword search over name, description, tags, and commands.
+
+```sh
+craft skills ls
+craft skills search media
+craft skills show media-analyze
+craft skills validate media-analyze
+craft skills run media-analyze analyze <blockId> --estimate
+```
+
+Skills run as subprocesses with structured JSON stdin/stdout. The skill can propose writes, but `craft-cli` owns all Craft writes and journal integration.
+
+### Media analysis
+
+```sh
+craft media analyze <blockId>
+craft media analyze <blockId> --estimate
+craft media analyze <blockId> --max-cost 0.50 --json
+```
+
+`craft media analyze` is a curated alias for `craft skills run media-analyze analyze <blockId>`. V1 is generic media analysis only, OpenAI-first, with a default EUR 1 cap. Useful artifacts are written into a Craft-visible run block under the source block: final analysis, transcript text when available, contact-sheet path, metadata JSON, model/cost metadata, and failure/partial status. Raw intermediate media files stay in `~/.cache/craft-cli/media-analyze`.
 
 ## Why this is faster than the API or MCP
 

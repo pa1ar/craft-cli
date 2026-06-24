@@ -41,6 +41,8 @@ export async function runAgentContext(argv: string[]): Promise<void> {
       { command: "diff", use: "compare current doc to last journal snapshot" },
       { command: "undo", use: "revert last CLI mutation where possible" },
       { command: "which", use: "map capability words to commands" },
+      { command: "skills ls/search/show/validate/run", use: "discover and run bundled/local automation skills" },
+      { command: "media analyze <blockId>", use: "curated alias for media-analyze skill with EUR 1 default cap" },
     ],
     exitCodes: {
       "0": "ok",
