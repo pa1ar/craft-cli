@@ -109,8 +109,15 @@ describe("Journal", () => {
         (strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days'), 'update', 'old-doc', '["b1"]', null, '{"v":1}'),
         (strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days'), 'update', 'old-doc', '["b2"]', null, '{"v":2}')
     `);
-    // also add a fresh one via record
-    journal.record({ op: "update", docId: "fresh-doc", blockIds: ["b3"], post: { v: 3 } });
+    // also add a fresh one via record. record() can auto-prune probabilistically,
+    // so pin Math.random for this test and leave explicit prune as the unit under test.
+    const originalRandom = Math.random;
+    Math.random = () => 1;
+    try {
+      journal.record({ op: "update", docId: "fresh-doc", blockIds: ["b3"], post: { v: 3 } });
+    } finally {
+      Math.random = originalRandom;
+    }
 
     const deleted = journal.prune(7);
     expect(deleted).toBe(2);
