@@ -10,6 +10,7 @@ const CAPABILITIES = [
   { keys: ["append", "write", "markdown"], command: "craft blocks append <docId|--date DATE> --markdown STR", why: "append markdown content" },
   { keys: ["edit", "replace", "patch"], command: "craft patch <docId> --old STR --new STR", why: "surgical block edit" },
   { keys: ["task", "todo", "inbox"], command: "craft tasks add <markdown> --to inbox|daily|doc", why: "create task" },
+  { keys: ["collection", "collections", "database", "kanban", "gallery", "view", "views", "board"], command: "craft col views <collectionId>", why: "manage collection view configuration and active view" },
   { keys: ["upload", "image", "file", "media"], command: "craft upload <file> (--parent ID | --date D)", why: "upload and insert media" },
   { keys: ["skills", "skill", "automation", "extension"], command: "craft skills search <query>", why: "discover bundled/local automation skills" },
   { keys: ["analyze", "analysis", "video", "audio", "transcript", "media"], command: "craft media analyze <blockId>", why: "analyze a Craft media block with OpenAI-backed bundled skill" },

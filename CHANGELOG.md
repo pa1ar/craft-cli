@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Added
+- Collection view commands: `craft col views` can list, create, update, delete, and activate table/gallery/kanban view definitions.
+
 ## [0.3.0] - 2026-06-24
 
 ### Added

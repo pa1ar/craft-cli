@@ -89,6 +89,11 @@ Collections
   col items add <id> --file F
   col items update <id> --file F
   col items rm <id> <itemId>...
+  col views <id>
+  col views create <id> --file F
+  col views update <id> <viewId> --file F
+  col views active <id> <viewId>
+  col views rm <id> <viewId>
   col mk --file F
   col rm <id>                                    (deletes the collection block)
 

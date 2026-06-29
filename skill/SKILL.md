@@ -85,10 +85,20 @@ craft col items <collectionId>
 craft col items add <id> --file items.json
 craft col items update <id> --file updates.json
 craft col items rm <colId> <itemId>...
+craft col views <collectionId>
+craft col views create <collectionId> --file view.json
+craft col views update <collectionId> <viewId> --file view.json
+craft col views active <collectionId> <viewId>
+craft col views rm <collectionId> <viewId>
 # items payload uses `title` for both reads and writes (NOT `name`). properties
 # reference the schema's auto-generated keys (e.g. "Due Date" -> `dueDate`) -
 # fetch `col schema` first to discover keys. null values on optional props are
 # passed through verbatim; strip them in your script if the API rejects them.
+# collection views are stored configuration only. they can define table/gallery/
+# kanban layouts, filters, sorts, grouping, hidden fields, field order, column
+# widths, calculations, and the active view, but `col views` does not execute the
+# filters/sorts/groups or return filtered rows. use `col items` for item data.
+# kanban views require exactly one groupBy rule.
 
 # links (outgoing + backlinks)
 craft links out <blockId>             # outgoing: parsed from fetched markdown, zero extra API calls

@@ -28,6 +28,57 @@ export interface UpdateCollectionItem {
   properties?: Record<string, unknown>;
 }
 
+export type CollectionViewType = "table" | "gallery" | "kanban" | string;
+
+export interface CollectionViewPropertyRef {
+  propertyId?: string;
+  propertyKey?: string;
+  propertyName?: string;
+  property?: string;
+}
+
+export interface CollectionViewSort extends CollectionViewPropertyRef {
+  ascending: boolean;
+}
+
+export interface CollectionViewFilter extends CollectionViewPropertyRef {
+  filterType: string;
+  filterValue?: unknown;
+}
+
+export interface CollectionViewCalculation extends CollectionViewPropertyRef {
+  type: string;
+  value?: unknown;
+}
+
+export interface CollectionView {
+  id?: string;
+  name?: string;
+  type?: CollectionViewType;
+  filters?: CollectionViewFilter[];
+  sortBy?: CollectionViewSort[];
+  groupBy?: CollectionViewSort[];
+  hiddenProperties?: CollectionViewPropertyRef[];
+  customPropertyOrder?: CollectionViewPropertyRef[];
+  fields?: {
+    order?: string[];
+    hidden?: string[];
+    widths?: Record<string, string>;
+  };
+  columnWidth?: Record<string, string>;
+  calculations?: Record<string, string | CollectionViewCalculation>;
+  isCalculationsRowVisible?: boolean;
+  gallery?: Record<string, unknown>;
+  kanban?: Record<string, unknown>;
+  isActive?: boolean;
+}
+
+export interface CollectionViewsResponse {
+  collectionBlockId: string;
+  activeViewId?: string;
+  views: CollectionView[];
+}
+
 export function makeCollections(c: CraftClient) {
   return {
     async list(documentIds?: string | string[]): Promise<ItemsResponse<Collection>> {
@@ -81,6 +132,33 @@ export function makeCollections(c: CraftClient) {
       return c.request("DELETE", `/collections/${collectionId}/items`, {
         body: { idsToDelete },
       });
+    },
+
+    async listViews(collectionId: string): Promise<CollectionViewsResponse> {
+      return c.request("GET", `/collections/${collectionId}/views`);
+    },
+
+    async createView(collectionId: string, view: Partial<CollectionView>): Promise<CollectionView> {
+      return c.request("POST", `/collections/${collectionId}/views`, { body: { view } });
+    },
+
+    async updateView(
+      collectionId: string,
+      viewId: string,
+      view: Partial<CollectionView>
+    ): Promise<CollectionView> {
+      return c.request("PUT", `/collections/${collectionId}/views/${viewId}`, { body: { view } });
+    },
+
+    async deleteView(
+      collectionId: string,
+      viewId: string
+    ): Promise<{ deletedViewId: string; activeViewId?: string }> {
+      return c.request("DELETE", `/collections/${collectionId}/views/${viewId}`);
+    },
+
+    async setActiveView(collectionId: string, viewId: string): Promise<CollectionView> {
+      return c.request("PUT", `/collections/${collectionId}/active-view`, { body: { viewId } });
     },
   };
 }

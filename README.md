@@ -133,6 +133,7 @@ craft tasks add / update / rm
 
 craft col ls / schema / items    collections and structured data
 craft col items add / update / rm
+craft col views ls/create/update/active/rm
 
 craft links out <id>             outgoing links (parsed from markdown)
 craft links in <id>              backlinks (title-based vault search)
@@ -156,6 +157,18 @@ craft media analyze <blockId>    analyze Craft media with bundled media-analyze 
 ```
 
 Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--source auto|api|local`, `--api`, `--dry-run` on writes.
+
+### Collection views
+
+`craft col views` manages stored collection view configuration: table, gallery, kanban, filters, sorting, grouping, hidden fields, column order, calculations, and the active view. These endpoints do not execute filters/sorts/groups or return filtered items; fetch items separately with `craft col items <collectionId>`.
+
+```sh
+craft col views <collectionId>
+craft col views create <collectionId> --file view.json
+craft col views update <collectionId> <viewId> --file view.json
+craft col views active <collectionId> <viewId>
+craft col views rm <collectionId> <viewId>
+```
 
 ## Skills
 

@@ -5,7 +5,15 @@ export type { GetBlockOptions, BlockInsert, BlockUpdate, SearchInDocOpts } from 
 export { normalizeCraftMediaBlocks } from "./blocks.ts";
 export type { ListDocsOptions, SearchDocsOptions, DocDestination, NewDocument } from "./documents.ts";
 export type { NewFolder, FolderDestination } from "./folders.ts";
-export type { CollectionSchema, CollectionProperty, NewCollectionItem, UpdateCollectionItem } from "./collections.ts";
+export type {
+  CollectionSchema,
+  CollectionProperty,
+  CollectionView,
+  CollectionViewsResponse,
+  CollectionViewType,
+  NewCollectionItem,
+  UpdateCollectionItem,
+} from "./collections.ts";
 export type { NewTask, TaskUpdate } from "./tasks.ts";
 export type { UploadTarget, UploadResult } from "./upload.ts";
 export type { WhiteboardElement } from "./whiteboards.ts";

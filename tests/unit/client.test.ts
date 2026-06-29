@@ -89,6 +89,38 @@ describe("CraftClient.request", () => {
     expect(res).toBe("<page>content</page>");
   });
 
+  test("collection view helpers use documented endpoints and payloads", async () => {
+    const calls: Array<{ method: string; path: string; body?: unknown }> = [];
+    const client = new CraftClient({
+      url: "https://example/api/v1",
+      key: "test",
+      fetch: mockFetch(async (url, init) => {
+        calls.push({
+          method: init.method ?? "GET",
+          path: url.pathname.replace("/api/v1", ""),
+          body: init.body ? JSON.parse(String(init.body)) : undefined,
+        });
+        return new Response(JSON.stringify({ id: "view1", views: [] }), {
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    });
+
+    await client.collections.listViews("col1");
+    await client.collections.createView("col1", { name: "Board", type: "kanban" });
+    await client.collections.updateView("col1", "view1", { name: "Board 2" });
+    await client.collections.setActiveView("col1", "view1");
+    await client.collections.deleteView("col1", "view1");
+
+    expect(calls).toEqual([
+      { method: "GET", path: "/collections/col1/views" },
+      { method: "POST", path: "/collections/col1/views", body: { view: { name: "Board", type: "kanban" } } },
+      { method: "PUT", path: "/collections/col1/views/view1", body: { view: { name: "Board 2" } } },
+      { method: "PUT", path: "/collections/col1/active-view", body: { viewId: "view1" } },
+      { method: "DELETE", path: "/collections/col1/views/view1" },
+    ]);
+  });
+
   test("reports request timeout clearly", async () => {
     const client = new CraftClient({
       url: "https://example/api/v1",

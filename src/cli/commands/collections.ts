@@ -13,6 +13,9 @@ export async function runCollections(argv: string[]) {
   if (sub === "schema") {
     return runSchema(argv.slice(1));
   }
+  if (sub === "views" || sub === "view") {
+    return runViews(argv.slice(1));
+  }
 
   const args = parseWithGlobals(rest, {
     flags: {
@@ -174,4 +177,112 @@ async function runItems(argv: string[]) {
     default:
       throw new Error(`unknown: col items ${sub}`);
   }
+}
+
+async function runViews(argv: string[]) {
+  // `col views <id>` lists. Known verbs consume positional[0]; otherwise
+  // positional[0] is the collection id and we default to list.
+  const args = parseWithGlobals(argv, {
+    flags: {
+      file: { type: "string" },
+    },
+  });
+  const { client } = await buildClient(args);
+
+  const VERBS = new Set(["ls", "list", "create", "mk", "update", "set", "rm", "delete", "active", "set-active"]);
+  const hasVerb = args.positional[0] !== undefined && VERBS.has(args.positional[0]!);
+  const sub = hasVerb ? args.positional[0] : "list";
+  if (hasVerb) args.positional.shift();
+
+  switch (sub) {
+    case undefined:
+    case "ls":
+    case "list": {
+      const id = args.positional[0];
+      if (!id) throw new Error("usage: craft col views <collectionId>");
+      const res = await client.collections.listViews(id);
+      if (args.flags.json) {
+        console.log(jsonOutForArgs(res, args.flags));
+        return;
+      }
+      const rows = res.views.map((view) => ({
+        id: view.id,
+        name: view.name,
+        type: view.type,
+        isActive: view.isActive ? "yes" : "",
+      }));
+      console.log(table(rows, ["id", "name", "type", "isActive"]));
+      return;
+    }
+    case "create":
+    case "mk": {
+      const id = args.positional[0];
+      if (!id) throw new Error("usage: craft col views create <collectionId> --file view.json");
+      const view = await readViewPayload(args.flags.file);
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.views.create", collectionId: id, view };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would create ${view.type ?? "collection"} view`);
+        return;
+      }
+      const res = await client.collections.createView(id, view);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `created ${res.id ?? "view"}`);
+      return;
+    }
+    case "update":
+    case "set": {
+      const [collectionId, viewId] = args.positional;
+      if (!collectionId || !viewId) {
+        throw new Error("usage: craft col views update <collectionId> <viewId> --file view.json");
+      }
+      const view = await readViewPayload(args.flags.file);
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.views.update", collectionId, viewId, view };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would update view ${viewId}`);
+        return;
+      }
+      const res = await client.collections.updateView(collectionId, viewId, view);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `updated ${res.id ?? viewId}`);
+      return;
+    }
+    case "rm":
+    case "delete": {
+      const [collectionId, viewId] = args.positional;
+      if (!collectionId || !viewId) throw new Error("usage: craft col views rm <collectionId> <viewId>");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.views.delete", collectionId, viewId };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would delete view ${viewId}`);
+        return;
+      }
+      const res = await client.collections.deleteView(collectionId, viewId);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `deleted ${res.deletedViewId}`);
+      return;
+    }
+    case "active":
+    case "set-active": {
+      const [collectionId, viewId] = args.positional;
+      if (!collectionId || !viewId) throw new Error("usage: craft col views active <collectionId> <viewId>");
+      if (args.flags["dry-run"]) {
+        const preview = { op: "collections.views.active", collectionId, viewId };
+        console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would set active view ${viewId}`);
+        return;
+      }
+      const res = await client.collections.setActiveView(collectionId, viewId);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `active ${res.id ?? viewId}`);
+      return;
+    }
+    default:
+      throw new Error(`unknown: col views ${sub}`);
+  }
+}
+
+async function readViewPayload(file?: unknown): Promise<Record<string, unknown>> {
+  const text = typeof file === "string" ? await Bun.file(file).text() : await readStdin();
+  const payload = JSON.parse(text);
+  const view = payload && typeof payload === "object" && !Array.isArray(payload) && "view" in payload
+    ? payload.view
+    : payload;
+  if (!view || typeof view !== "object" || Array.isArray(view)) {
+    throw new Error("view payload must be an object or {\"view\": object}");
+  }
+  return view as Record<string, unknown>;
 }
