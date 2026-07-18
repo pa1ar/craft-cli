@@ -71,11 +71,17 @@ craft blocks mv <blockId>... --to <pageId>
 craft blocks rm <blockId>...
 
 # tasks
-craft tasks ls inbox | active | upcoming | logbook
-craft tasks ls document --doc <id>
+craft tasks                              # all tasks across the space (same as `tasks ls all`)
+craft tasks ls [all|inbox|active|upcoming|logbook]
+craft tasks ls document --doc <id>       # server-side document scope
+craft tasks ls --state todo --document "Project" --deadline-to tomorrow
+craft tasks ls --doc <id> --scheduled none --reminder no --json
+craft tasks ls --date today --location daily --text "report" --limit 20
+craft tasks ls --repeat yes --notification yes
 craft tasks add "buy milk" --to inbox
 craft tasks add "review doc" --to daily --date today --schedule tomorrow
 craft tasks update <id> --state done
+craft tasks update <id> --schedule none --deadline tomorrow --to doc --doc <id>
 craft tasks rm <id>
 
 # collections
@@ -258,11 +264,20 @@ craft docs search '#type/idea' --fetch-blocks --json |
 
 Or reuse the old `rename-tag.ts` (it's still in `~/dev/craft-docs/craft-do-api/`).
 
-### 5. Dump the task inbox
+### 5. Explore tasks across the space
 
 ```sh
-craft tasks ls inbox --json | jq '.items[] | {id, state: .taskInfo.state, task: .markdown}'
+craft tasks --state todo --json | jq '.items[] | {id, state: .taskInfo.state, location, task: .markdown}'
+craft tasks ls --document "Project" --deadline-to tomorrow --reminder yes --json
 ```
+
+Task list filters compose locally after one API call:
+
+- content/location: `--text TEXT`, `--doc ID`, `--document TITLE`, `--location inbox|document|daily`
+- state/date: `--state todo|done|canceled`, `--date`, `--date-from`, `--date-to`, `--scheduled`, `--scheduled-from`, `--scheduled-to`, `--deadline`, `--deadline-from`, `--deadline-to`, `--overdue`
+- task configuration: `--repeat yes|no`, `--reminder yes|no` (`--notification` alias), `--priority VALUE`, `--limit N`
+- dates accept `YYYY-MM-DD`, `today`, `yesterday`, or `tomorrow`; `--scheduled none` and `--deadline none` select tasks without those dates
+- Craft currently defines practical priority through schedules and deadlines and does not expose a native task-priority field. `--priority` is forward-compatible for API payloads that include one; `--priority none` selects tasks without one.
 
 ### 6. Add a task without leaving the terminal
 
@@ -336,7 +351,7 @@ craft cat <id1> <id2> <id3>
 6. **Error exit codes**: 0 ok, 1 user error, 2 API error, 3 auth, 4 not found. Script accordingly.
 7. **Large list latency**: `craft docs ls` with no filter takes ~3.4s via API. In `source auto` on a Mac with Craft installed, it's instant (~27ms). On Linux / headless hosts, run `craft source api` once after setup to skip local discovery entirely, or pass `--source api`/`--api` per-command, or set `CRAFT_SOURCE=api` in the environment.
 8. **Rate limits**: generous. 60 parallel calls tested without 429. Default concurrency in scan pipelines can be 15+.
-9. **Tasks & collections have inconsistent payload keys** (`tasks` vs `tasksToUpdate` vs `idsToDelete`). The CLI abstracts this — you don't need to care unless you use `craft raw`.
+9. **Tasks & collections have inconsistent payload keys** (`tasks` vs `tasksToUpdate` vs `idsToDelete`). The CLI abstracts this — you don't need to care unless you use `craft raw`. The live task API also accepts undocumented `scope=all`; `craft tasks` uses it by default so unscheduled document tasks are not lost.
 10. **Partial block updates preserve children.** `craft blocks update <id> --markdown "new"` renames without dropping the sub-tree.
 11. **Daily note auto-creates** when you append with `--date today` and no note exists yet.
 12. **Always tag AI-generated content with `#by/claude`** in the markdown (Pavel's global rule, see `~/.claude/CLAUDE.md`).

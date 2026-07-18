@@ -16,7 +16,7 @@ export interface TaskUpdate {
 
 export function makeTasks(c: CraftClient) {
   return {
-    async list(scope: TaskScope, documentId?: string): Promise<ItemsResponse<Task>> {
+    async list(scope: TaskScope = "all", documentId?: string): Promise<ItemsResponse<Task>> {
       return c.request("GET", "/tasks", { query: { scope, documentId } });
     },
 

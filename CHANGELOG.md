@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Added
+- Space-wide task exploration: `craft tasks` now uses the live `scope=all` endpoint by default and supports composable filters for state, document, location, text, dates, repeat, reminders/notifications, overdue tasks, native priority, and result limits; task updates can also move tasks and clear dates with `none`.
+
 ## [0.4.0] - 2026-06-29
 
 ### Added

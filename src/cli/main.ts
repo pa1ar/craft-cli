@@ -62,7 +62,10 @@ Read
   blocks get <id> [--json] [--depth N] [--no-links]
   # backlinks are appended by default — pass --no-links to skip the extra search call
   blocks search <docId> <pattern> [--before N] [--after N] [--fetch]
-  tasks ls <scope> [--doc ID] [--json]
+  tasks [ls [all|inbox|active|upcoming|logbook|document]] [filters] [--json]
+    filters: --state S --doc ID --document TEXT --date D --scheduled D --deadline D
+             --location L --text TEXT --priority P --repeat yes|no --reminder yes|no --overdue
+    run 'craft tasks --help' for date ranges, notification alias, and all filters
 
 Write
   folders mk <name> [--parent ID]
@@ -78,7 +81,7 @@ Write
   patch <docId> --old STR --new STR       find and replace in blocks (or pipe old\\n---\\nnew)
   blocks mv <id>... --to pageId|--date DATE
   tasks add <markdown> --to inbox|daily|doc [--doc ID] [--date D] [--schedule D]
-  tasks update <id> [--state todo|done|canceled] [--markdown STR] [--schedule D]
+  tasks update <id> [--state todo|done|canceled] [--markdown STR] [--schedule D] [--deadline D] [--to inbox|daily|doc]
   tasks rm <id>...
   undo [docId] [--force] [--dry-run]      revert last mutation
 

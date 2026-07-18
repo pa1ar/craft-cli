@@ -34,6 +34,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
       { command: "docs daily", use: "fetch daily note" },
       { command: "blocks append", use: "append markdown to a document or daily note" },
       { command: "patch", use: "find and replace one matching block" },
+      { command: "tasks", use: "list all space tasks; filter by state, document, date, repeat, or reminder" },
       { command: "tasks add", use: "create task in inbox, daily note, or document" },
       { command: "col views", use: "list/create/update/delete collection view configuration and active view" },
       { command: "upload", use: "upload file and insert image/video/document block" },

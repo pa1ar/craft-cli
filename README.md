@@ -128,8 +128,11 @@ craft blocks append <doc> --markdown "text"
 craft blocks append --date today --markdown "text"
 craft blocks insert / update / mv / rm
 
-craft tasks ls inbox|active|upcoming|logbook
-craft tasks add / update / rm
+craft tasks                       all tasks across the space
+craft tasks ls [scope]            optional API scope: inbox/active/upcoming/logbook/document
+craft tasks ls --state todo --document "Project" --deadline-to tomorrow
+craft tasks ls --reminder yes --repeat yes --json
+craft tasks add / update / rm       create, reschedule, move, complete, or remove tasks
 
 craft col ls / schema / items    collections and structured data
 craft col items add / update / rm

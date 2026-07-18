@@ -74,24 +74,50 @@ export interface CollectionItem {
   content?: Block[];
 }
 
-export type TaskScope = "inbox" | "active" | "upcoming" | "logbook" | "document";
+export type TaskScope = "all" | "inbox" | "active" | "upcoming" | "logbook" | "document";
 export type TaskState = "todo" | "done" | "canceled";
 
 export interface TaskInfo {
   state?: TaskState;
-  scheduleDate?: DateInput;
-  deadlineDate?: DateInput;
+  scheduleDate?: DateInput | null;
+  deadlineDate?: DateInput | null;
+  /** Forward-compatible: the live API does not currently expose task priority. */
+  priority?: string | number;
+  /** Forward-compatible: current responses nest reminders under repeat. */
+  reminder?: TaskReminder;
 }
 
 export type TaskLocation =
   | { type: "inbox" }
   | { type: "dailyNote"; date: DateInput }
-  | { type: "document"; documentId: string };
+  | { type: "document"; documentId: string; title?: string };
+
+export interface TaskReminder {
+  enabled: boolean;
+  dateOffset?: number;
+}
+
+export interface TaskRepeat {
+  type?: "flexible" | "fixed" | string;
+  frequency?: "daily" | "weekly" | "monthly" | "yearly" | string;
+  interval?: number;
+  startDate?: DateInput;
+  reminder?: TaskReminder;
+  [key: string]: unknown;
+}
 
 export interface Task {
   id: string;
   markdown: string;
   taskInfo?: TaskInfo;
+  location?: TaskLocation;
+  repeat?: TaskRepeat;
+  /** Forward-compatible: current responses nest reminders under repeat. */
+  reminder?: TaskReminder;
+  /** Forward-compatible: the live API does not currently expose task priority. */
+  priority?: string | number;
+  completedAt?: string;
+  canceledAt?: string;
 }
 
 export interface ConnectionInfo {

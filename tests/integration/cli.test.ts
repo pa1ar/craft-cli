@@ -142,6 +142,16 @@ describeLive("cli e2e", () => {
     expect(out.type).toBe("page");
   }, 30000);
 
+  test("tasks defaults to all scope and composes filters", async () => {
+    const r = await run(["tasks", "--state", "todo", "--scheduled", "none", "--limit", "2", "--json"]);
+    expect(r.code).toBe(0);
+    const out = JSON.parse(r.stdout);
+    expect(out.meta?.scope).toBe("all");
+    expect(out.meta?.total).toBeGreaterThanOrEqual(out.meta?.matched ?? 0);
+    expect(out.items.length).toBeLessThanOrEqual(2);
+    expect(out.items.every((task: any) => task.taskInfo?.state === "todo" && !task.taskInfo?.scheduleDate)).toBe(true);
+  }, 30000);
+
   // regression: bare `col schema <id>` and `col items <id>` must dispatch to
   // get/list without requiring an explicit sub-verb. a bogus uuid routes
   // through to the API and must come back as NOT_FOUND (exit 4), proving

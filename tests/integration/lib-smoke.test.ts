@@ -170,4 +170,10 @@ describeLive("lib smoke", () => {
     expect(logbook.items.some((t) => t.id === taskId)).toBe(true);
     await c.tasks.delete([taskId]);
   });
+
+  test("tasks.list defaults to the live all-tasks scope", async () => {
+    const all = await c.tasks.list();
+    expect(Array.isArray(all.items)).toBe(true);
+    expect(all.items.some((task) => task.location?.type === "document")).toBe(true);
+  });
 });
