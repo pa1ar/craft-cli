@@ -8,6 +8,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-18
+
 ### Added
 - Space-wide task exploration: `craft tasks` now uses the live `scope=all` endpoint by default and supports composable filters for state, document, location, text, dates, repeat, reminders/notifications, overdue tasks, native priority, and result limits; task updates can also move tasks and clear dates with `none`.
 
@@ -54,7 +56,8 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/pa1ar/craft-cli/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/pa1ar/craft-cli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/pa1ar/craft-cli/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/pa1ar/craft-cli/compare/v0.1.0...v0.2.0
