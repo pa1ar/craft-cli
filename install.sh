@@ -67,7 +67,10 @@ if [[ $SKILL_ONLY -eq 0 ]]; then
   if [[ ! -x "$REPO_ROOT/dist/craft" ]]; then
     fail "build did not produce dist/craft"
   fi
-  ok "built $REPO_ROOT/dist/craft"
+  if ! "$REPO_ROOT/dist/craft" --help >/dev/null; then
+    fail "built binary could not be executed"
+  fi
+  ok "built and verified $REPO_ROOT/dist/craft"
 fi
 
 # ---------- symlink binary ----------

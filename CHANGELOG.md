@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Fixed
+- macOS builds now re-sign and verify the completed Bun executable, preventing invalid Mach-O signatures from causing an immediate exit 137; the installer also refuses to link a binary that cannot launch.
+
 ## [0.5.0] - 2026-07-18
 
 ### Added
