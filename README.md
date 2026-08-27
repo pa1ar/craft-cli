@@ -43,11 +43,10 @@ You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow
    craft docs ls --limit 3 # confirms reads work
 
 6. SKILL REGISTRATION
-   The repo ships an agent skill at `skill/SKILL.md` — full command surface, recipes, caveats. Register it with this host so you can load it on demand:
-     - Claude Code: `install.sh` already symlinked it to `~/.claude/skills/craft-cli`. Done.
-     - Codex CLI: symlink `~/dev/craft-cli/skill` to `~/.codex/skills/craft-cli` (create dir if missing).
-     - OpenCode / Cursor / other: place the skill where this host loads agent skills from. If you do not know the canonical path for this host, ask me.
-   After registration, read `skill/SKILL.md` once before you write any craft-* commands — it contains the precedence rules, exit codes, and the gotchas that the API does not document.
+   The repo ships an agent skill at `skill/SKILL.md` with the full command surface, recipes, and caveats.
+   First honor any canonical skills folder or craft-cli skill location I have already specified. If that location contains a craft-cli skill, use it and do not replace it with a harness-specific copy.
+   Otherwise, determine where this agent harness loads user skills and register the bundled `skill/` directory there. Prefer a symlink on local systems so updates remain connected to the repo. If the harness location is unknown, ask me for the canonical skills directory rather than assuming a Claude, Codex, Cursor, or other vendor-specific path.
+   Verify that the registered `SKILL.md` is readable through the harness, then read that canonical installed skill before non-trivial craft-cli use.
 
 7. REPORT BACK
    Tell me:
@@ -376,7 +375,7 @@ const doc = await craft.blocks.get(hits.items[0]!.documentId, { format: "markdow
 ## Downstream consumers
 
 - [Raycast extension](https://github.com/pa1ar/raycast-craft-api) - imports `CraftClient` from this library for a native macOS Raycast UI
-- Claude Code skill (`~/.claude/skills/craft-cli/`) - teaches AI agents to use the CLI
+- Agent skill, registered in the user's canonical skills folder or the active harness's user-skill directory - teaches AI agents to use the CLI
 
 ## License
 

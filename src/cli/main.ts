@@ -34,7 +34,7 @@ import { setSourceOverride } from "./local.ts";
 const HELP = `craft — Craft Docs CLI
 Repo: https://github.com/pa1ar/craft-cli
 
-AI agents: read skill/SKILL.md (or ~/.claude/skills/craft-cli/SKILL.md) before non-trivial use.
+AI agents: use the user's canonical craft-cli skill when configured. Otherwise register skill/SKILL.md with your agent harness before non-trivial use.
 
 Usage: craft <command> [args]
 

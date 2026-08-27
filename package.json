@@ -1,6 +1,6 @@
 {
   "name": "@1ar/craft-cli",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Fast CLI wrapping the Craft Docs API. Designed for LLM tool use and Raycast reuse.",
   "license": "MIT",
   "author": "Pavel Larionov",

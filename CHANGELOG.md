@@ -8,6 +8,11 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-27
+
+### Changed
+- Agent skill discovery now honors user-declared canonical skill locations and otherwise directs agents to register the bundled skill in their active harness; attribution guidance uses the harness-neutral `#by/ai` tag and preserves exact/source-only content when requested.
+
 ### Fixed
 - macOS builds now re-sign and verify the completed Bun executable, preventing invalid Mach-O signatures from causing an immediate exit 137; the installer also refuses to link a binary that cannot launch.
 
@@ -59,7 +64,8 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/pa1ar/craft-cli/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/pa1ar/craft-cli/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/pa1ar/craft-cli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/pa1ar/craft-cli/compare/v0.2.0...v0.3.0

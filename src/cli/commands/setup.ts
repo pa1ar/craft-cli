@@ -82,12 +82,9 @@ export async function runSetup(argv: string[]) {
     console.error(dim("read source: api (no local Craft app). change with: craft source auto"));
   }
 
-  // skill path hint for AI agents
-  const skillPaths = [
-    `${process.env.HOME}/.claude/skills/craft-cli/SKILL.md`,
-    "skill/SKILL.md (in repo)",
-  ];
-  console.error(dim(`agent reference: ${skillPaths[0]}`));
+  // Agent harnesses use different skill directories. Respect a user-configured
+  // canonical skill first; otherwise register the bundled repo skill there.
+  console.error(dim("agent skill: use the user's canonical craft-cli skill, or register the repo's skill/SKILL.md with this harness"));
 
   if (args.flags.json) {
     console.log(jsonOutForArgs({ profile: profileName, space: info.space, source: existing.source ?? (existing.mode === "api" ? "api" : "auto") }, args.flags));

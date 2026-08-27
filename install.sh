@@ -5,7 +5,7 @@
 #   1. verifies bun is installed (prints install hint if missing)
 #   2. installs dependencies and builds the compiled binary
 #   3. symlinks dist/craft -> ~/.local/bin/craft (creates dir if missing)
-#   4. optionally symlinks skill/ -> ~/.claude/skills/craft-cli (only if ~/.claude exists)
+#   4. optionally keeps the legacy Claude Code skill symlink current when ~/.claude exists
 #   5. prints next-step instructions for `craft setup` and `craft mode`
 #
 # safe to re-run: binary symlink uses `ln -sf`, skill symlink uses `ln -sfn`
@@ -86,7 +86,7 @@ if [[ $SKILL_ONLY -eq 0 ]]; then
   fi
 fi
 
-# ---------- symlink skill (optional) ----------
+# ---------- legacy Claude Code skill symlink (optional) ----------
 CLAUDE_DIR="${HOME}/.claude"
 SKILL_TARGET="$CLAUDE_DIR/skills/craft-cli"
 if [[ -d "$CLAUDE_DIR" ]]; then
@@ -103,7 +103,7 @@ if [[ -d "$CLAUDE_DIR" ]]; then
     ok "linked skill → $SKILL_TARGET"
   fi
 else
-  info "no ~/.claude directory found - skipping skill install (not a Claude Code host)"
+  info "no ~/.claude directory found - register skill/ in this agent harness or the user's canonical skills folder"
 fi
 
 # ---------- next steps ----------
@@ -115,4 +115,5 @@ printf "     on Linux / headless / no Craft desktop app. skip this on Mac with C
 printf "  3. ${BOLD}craft whoami${RESET}\n"
 printf "     verify\n"
 printf "\nagent docs: ${BOLD}$REPO_ROOT/skill/SKILL.md${RESET}\n"
+printf "register:   ${BOLD}use the user's canonical skill location, or this harness's user-skill directory${RESET}\n"
 printf "humans:     ${BOLD}$REPO_ROOT/README.md${RESET}\n"

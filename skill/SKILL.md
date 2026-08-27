@@ -135,7 +135,7 @@ craft log --since 2026-04-01          # date filter
 
 # misc
 craft upload photo.png --parent <docId>
-craft comment <blockId> "nice point #by/claude"
+craft comment <blockId> "nice point #by/ai"
 craft wb mk --parent <docId>
 craft wb el add <wbId> --file elements.json
 
@@ -246,7 +246,7 @@ With structured content: `craft docs daily --json --depth 1`
 ### 3. Append to today's daily note
 
 ```sh
-craft blocks append --date today --markdown "15:42 #by/claude idea: …"
+craft blocks append --date today --markdown "15:42 #by/ai idea: …"
 ```
 
 ### 4. Rename a tag across the entire vault
@@ -354,7 +354,7 @@ craft cat <id1> <id2> <id3>
 9. **Tasks & collections have inconsistent payload keys** (`tasks` vs `tasksToUpdate` vs `idsToDelete`). The CLI abstracts this — you don't need to care unless you use `craft raw`. The live task API also accepts undocumented `scope=all`; `craft tasks` uses it by default so unscheduled document tasks are not lost.
 10. **Partial block updates preserve children.** `craft blocks update <id> --markdown "new"` renames without dropping the sub-tree.
 11. **Daily note auto-creates** when you append with `--date today` and no note exists yet.
-12. **Always tag AI-generated content with `#by/claude`** in the markdown (Pavel's global rule, see `~/.claude/CLAUDE.md`).
+12. **When the user's Craft conventions call for AI attribution, use the harness-neutral `#by/ai` tag.** User instructions to preserve source content exactly or omit attribution take precedence.
 13. **Links & backlinks**:
     - **Outgoing links are free** — every `[text](block://UUID)` reference is already in the block's markdown after a normal fetch. `craft links out` just parses it.
     - **Incoming links (backlinks) are NOT natively supported.** Craft's search index strips `block://UUID` URIs — searching for a raw UUID returns zero hits. The CLI uses Pavel's trick: the visible anchor text of a link IS indexed, and Craft's default link text is the target's title, so `docs/search` for the title followed by a local `block://<id>` filter finds backlinks in one API call. Set `--text` when authors use custom labels. Fall back to `--exhaustive` only when the fast path looks suspiciously empty.
