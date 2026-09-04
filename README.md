@@ -1,10 +1,12 @@
 # craft-cli
 
-CLI wrapper over the [Craft Docs](https://www.craft.do/) "API for All Docs".
+Local-first CLI for [Craft Docs](https://www.craft.do/): fast reads from Craft Desktop's cache when eligible, REST fallback, and API-only writes.
 
 Single-binary Bun CLI, AI-agent-first, runs on macOS and Linux. Also exports a TypeScript library for Raycast and Node scripts.
 
 > Unofficial. Not affiliated with Craft Docs.
+
+> **Agent read policy:** On macOS, keep `craft source auto`. Unfiltered `docs ls` and simple `docs search` use Craft's local cache first and fall back to REST automatically. Do not pass `--api` routinely. Full document/block reads, tasks, collections, filtered queries, and every write use REST.
 
 ![craft-cli demo](docs/images/craft-cli-demo.gif)
 
@@ -32,15 +34,16 @@ You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow
    Verify `~/.local/bin` is on PATH. Add it to my shell rc if missing (detect zsh vs bash from $SHELL).
 
 3. AUTHENTICATE
-   Ask me for the Craft API URL and API key. I get them from Craft → Imagine → New API Connection. The URL looks like `https://connect.craft.do/links/XXX/api/v1`, the key starts with `pdk_`.
+   Ask me for the Craft API URL and API key. I get them from Craft → Connections → New API Connection. The URL looks like `https://connect.craft.do/links/XXX/api/v1`, the key starts with `pdk_`.
    Then run: craft setup --url "<URL>" --key "<KEY>"
 
-4. SOURCE (Linux / headless only)
-   If this host has no Craft desktop app (any Linux box, any remote/headless server), persist API-only source: `craft source api`. On macOS with the Craft app installed, skip this — `source auto` is the default and reads local first.
+4. READ SOURCE
+   On macOS with Craft Desktop installed, run `craft source auto`. Keep this setting: eligible reads use Craft's local cache first and automatically fall back to REST. Do not persist API-only mode or add `--api` to ordinary reads.
+   Only on Linux, remote/headless hosts, or machines without Craft Desktop, run `craft source api`.
 
 5. VERIFY
-   craft whoami            # confirms auth works
-   craft docs ls --limit 3 # confirms reads work
+   craft doctor --json     # confirms auth, API, effective source, and local availability
+   craft docs ls           # on macOS, human output should end with "documents (local)"
 
 6. SKILL REGISTRATION
    The repo ships an agent skill at `skill/SKILL.md` with the full command surface, recipes, and caveats.
@@ -51,6 +54,7 @@ You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow
 7. REPORT BACK
    Tell me:
      - which source is active (auto vs api vs local),
+     - whether the local Craft store was detected and which reads can use it,
      - where the binary landed,
      - where the skill is registered,
      - any step you skipped and why.
@@ -60,7 +64,7 @@ You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow
 
 ## For humans
 
-An AI-native CLI for the Craft Docs API. The primary goal is to make Craft content as easy to read and edit from AI coding agents (Claude Code, Codex, OpenCode, etc.) as local files are in tools like Obsidian.
+A local-first CLI for Craft Docs. The primary goal is to make Craft content as easy to read and edit from AI coding agents (Claude Code, Codex, OpenCode, etc.) as local files are in tools like Obsidian.
 
 The CLI handles the API's footguns and undocumented behaviors internally - rate limits, inconsistent payload keys, silent routing of unanchored inserts, missing `content` keys at depth 0, RE2 regex edge cases, backlink resolution via title search - so that agents and scripts don't have to.
 
@@ -81,7 +85,7 @@ Install from source: see the install block above.
 ### Getting your API key
 
 1. Open the Craft app (macOS/iOS) or [craft.do](https://www.craft.do/) in a browser
-2. Go to **Imagine** (the integrations panel)
+2. Go to **Connections**
 3. Click the **+** button (top left) and select **New API Connection**
 4. Choose which documents will be accessible via this connection
 5. Switch **Access Mode** from "Public" to **API Key**
@@ -97,7 +101,7 @@ Then run:
 craft setup --url "https://connect.craft.do/links/XXX/api/v1" --key "pdk_..."
 ```
 
-Credentials stored at `~/.config/craft-cli/config.json` (mode 0600). Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_SOURCE` (see [Read source](#how-craft-cli-uses-this)), legacy `CRAFT_MODE`, `CRAFT_LOCAL_PATH`.
+Credentials stored at `~/.config/craft-cli/config.json` (mode 0600). Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_SOURCE` (see [Read source](#how-craft-cli-uses-this)), legacy `CRAFT_MODE`, `CRAFT_LOCAL_PATH`, `CRAFT_LOCAL_TIMEOUT_MS`, `CRAFT_ON_DEVICE_ASSETS_PATH`.
 
 On Linux or any host where Craft is not installed, run `craft source api` after setup to skip local-store discovery entirely.
 
@@ -114,9 +118,9 @@ craft source [auto|api|local]    show or persist read source (auto default)
 craft folders ls                 folder tree
 craft folders mk / rm            create / delete folders
 
-craft docs ls                    list documents (filter by folder/location)
-craft docs search "regex"        search by content (RE2 regex or phrase match)
-craft docs get <id>              render doc as markdown (includes backlinks)
+craft docs ls                    list documents (unfiltered: local-first in auto)
+craft docs search "query"        search content (local FTS5 or API RE2)
+craft docs get <id>              render doc via API as markdown (includes backlinks)
 craft docs daily [DATE]          today's daily note
 craft docs mk / mv / rm          create / move / trash documents
 craft docs open <id>             print deeplink and open in Craft app
@@ -161,6 +165,18 @@ craft media replace <blockId> <file>  upload, verify, and replace media
 ```
 
 Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--source auto|api|local`, `--api`, `--dry-run` on writes.
+
+### Agent read routing
+
+Keep `source=auto` on macOS. It uses Craft's local SQLite and PlainTextSearch cache for unfiltered `docs ls` and simple `docs search`, then falls back to the API if the cache is unavailable or the query needs API-only filters. `media local` separately resolves downloaded assets from Craft's on-device cache.
+
+`docs get`, `docs daily`, block reads, tasks, collections, links, filtered/fetch-block searches, and all writes use REST. The source setting controls local-capable listing/search commands; API-required commands still use REST even with `source=local`. Use `--source api` only when the task explicitly requires authoritative remote state or API-only query behavior. Check routing with `craft source --json` and availability with `craft doctor --json`.
+
+### Current Craft API coverage
+
+The 2026-09-04 alignment includes collection-view CRUD and active-view selection, space-wide tasks through documented `scope=all`, page styling and separator fields, typed media upload/insert, local media resolution, and safe media replacement. `craft raw` remains the escape hatch for newly published endpoints.
+
+Craft app 3.6 features including editable inline tags, arbitrary custom colors, and Daily Notes range export do not currently have documented REST operations, so craft-cli does not claim support for those app-only features.
 
 ### Collection views
 
@@ -207,7 +223,7 @@ craft media replace <blockId> edited.mov --content-type video/quicktime
 
 ## Why this is faster than the API or MCP
 
-craft-cli uses a hybrid read architecture on macOS: reads from Craft's local SQLite FTS5 index and PlainTextSearch JSON files, writes through the REST API. Both local stores update within 1 second of any write (API or Craft app), so data is always fresh.
+craft-cli uses a hybrid read architecture on macOS: eligible listing and search reads come from Craft's local SQLite FTS5 index and PlainTextSearch JSON files, while full block reads and all writes use the REST API. The local stores typically update within about a second while Craft Desktop is running and synced; use API source when authoritative remote state matters.
 
 ```mermaid
 flowchart LR
@@ -351,17 +367,17 @@ graph TD
 
 ### How craft-cli uses this
 
-**Source auto (default):** `docs ls` and `docs search` read from local SQLite + PlainTextSearch JSON when available. All writes go through the REST API. Falls back to API-only when local data is absent (non-Mac, Craft not installed).
+**Source auto (default):** unfiltered `docs ls` and simple `docs search` read from local SQLite + PlainTextSearch JSON when available. Unsupported reads and all writes go through the REST API. It falls back automatically when local data is absent or the query needs API-only filters.
 
 **Source api:** run `craft source api` once to persist the setting (stored in `~/.config/craft-cli/config.json`). Use this on Linux or any host where Craft is not installed. Journal, undo, log, and diff keep working — they use `~/.cache/craft-cli/journal.db`, which is cross-platform. Flip back with `craft source auto`, check current state with `craft source`.
 
-**Source local:** local-only reads. Fails clearly if Craft Desktop data is unavailable or a query requires API-only filters.
+**Source local:** require the local store for local-capable listing/search commands and fail if their query is unsupported locally. Commands that inherently require REST still use REST.
 
 ```
 craft source              # show current source
 craft source api          # persist api-only (Linux / headless)
 craft source auto         # persist local-first with API fallback
-craft source local        # persist local-only
+craft source local        # require local for eligible list/search reads
 CRAFT_SOURCE=api craft ...  # runtime override, one invocation
 craft docs ls --source api  # per-command override
 craft docs ls --api         # legacy shortcut for --source api

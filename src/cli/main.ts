@@ -40,8 +40,9 @@ Usage: craft <command> [args]
 
 Quick start (fresh machine)
   1. craft setup --url <URL> --key <KEY>    (get from Craft → Settings → Developer)
-  2. craft source api                        on Linux / headless / no Craft app
-  3. craft whoami                            verify
+  2. craft source auto                       on macOS with Craft Desktop (local-first)
+     craft source api                        only on Linux / headless / no Craft app
+  3. craft doctor --json                     verify API and local availability
 
 Setup
   setup --url URL --key KEY [--name PROFILE]   store credentials (verified)
@@ -51,11 +52,18 @@ Setup
   source [auto|api|local]                       show or set read source (auto default)
   mode [api|hybrid]                             legacy alias for source auto|api
 
+Read routing (important)
+  Keep source=auto on macOS. Do not pass --api for ordinary reads.
+  auto uses the local Craft cache for unfiltered docs ls and simple docs search,
+  then falls back to REST when unavailable or when filters require the API.
+  docs get/daily, blocks, tasks, collections, links, and every write use REST.
+  media local reads Craft's on-device asset cache. Local files are read-only.
+
 Read
   folders ls [--tree] [--json]                  list folders
-  docs ls [--location L] [--folder ID] [--json] list documents
-  docs search <pattern> [--include] [--folder] [--fetch-blocks] [--json]
-  docs get <id> [--json] [--depth N] [--metadata] [--raw] [--no-links] [--exhaustive]
+  docs ls [--location L] [--folder ID] [--json] list documents (simple query: local-first)
+  docs search <pattern> [--include] [--folder] [--fetch-blocks] [--json] (simple query: local-first)
+  docs get <id> [--json] [--depth N] [--metadata] [--raw] [--no-links] [--exhaustive] (API)
   docs daily [DATE] [--json] [--raw] [--no-links]   fetch daily note
   cat <id> [id...]                                   read multiple docs, concat output
   diff <docId>                                       compare to last known state

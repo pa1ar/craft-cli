@@ -1,17 +1,25 @@
 ---
 name: craft-cli
-description: Fast CLI wrapper over the Craft Docs "API for All Docs" for reading, searching, and editing Pavel's Craft vault from the shell. Triggers when the user mentions craft docs, the PKM vault, LTM, daily notes, searching or editing craft content, or says "c:" / "in craft". Prefer this CLI over the Craft MCP server for bulk scans, multi-doc edits, scripting, or anything repetitive. Use the MCP server for small interactive one-offs when the CLI is absent.
+description: Local-first Craft Docs CLI for searching, reading, and editing Pavel's Craft vault. On macOS it uses Craft Desktop's cache for eligible reads, falls back to REST when needed, and sends all writes through the API. Triggers for Craft docs, the PKM vault, LTM, daily notes, media, tasks, collections, or "c:" / "in craft".
 ---
 
 # craft-cli — Craft Docs from the shell
 
 `craft` is a compiled Bun binary at `~/.local/bin/craft`. Source: `~/dev/tools/craft-cli/`. Library exports at `@1ar/craft-cli/lib` for Raycast/Node reuse.
 
+## Required read routing
+
+1. On macOS with Craft Desktop installed, keep `craft source auto`. Do not add `--api` by habit or persist API-only mode for normal work.
+2. In `auto`, unfiltered `craft docs ls` and simple `craft docs search` queries use Craft's local SQLite/PlainTextSearch cache first. Successful human output is marked `(local)`.
+3. `auto` falls back to REST when local data is unavailable or the query needs API-only filters. `docs get`, `docs daily`, `blocks get`, tasks, collections, and authoritative remote-state checks use the API regardless of source setting.
+4. All writes always use the REST API. Local Craft files are read-only inputs.
+5. Before a multi-read workflow, run `craft source --json`. If it reports `api` on a Mac and the task did not explicitly require authoritative remote reads, run `craft source auto`.
+
 ## When to use this vs the Craft MCP server
 
-- **Use `craft` CLI**: bulk scans across docs, tag renames, anything touching >5 blocks, scripted pipelines (pipe to jq, grep), cases where MCP's rate limits bite, anything you want to repeat via shell history.
-- **Use Craft MCP (`mcp__claude_ai_Craft__*`)**: single interactive read of a known block, when the CLI isn't installed, quick one-off edits.
-- **Both are safe**: they hit the same API. The CLI is just faster and more scriptable.
+- **Use `craft` CLI**: default for listing/searching because eligible reads are local, plus bulk scans, multi-block work, scripted pipelines, media, and repeatable operations.
+- **Use Craft MCP**: a small interactive read or edit when the CLI is absent or the user explicitly chose MCP.
+- The CLI is hybrid: eligible reads may stay local, while writes and unsupported reads use the same Craft REST API as other clients.
 
 ## Setup check
 
@@ -35,7 +43,7 @@ craft profiles list
 craft source                           # show current read source (auto | api | local)
 craft source api                       # persist api-only (Linux, headless, no Craft app)
 craft source auto                      # persist auto (local if present, API fallback)
-craft source local                     # force local-only; fail if unavailable
+craft source local                     # require local for eligible list/search reads
 craft mode api                         # legacy alias for source api
 craft mode hybrid                      # legacy alias for source auto
 
@@ -46,7 +54,7 @@ craft folders rm <id>
 
 # documents
 craft docs ls [--location unsorted|trash|templates|daily_notes] [--folder ID]
-craft docs search "regex" [--folder ID] [--include] [--fetch-blocks]
+craft docs search "query" [--folder ID] [--include] [--fetch-blocks]
 craft docs get <id>                   # renders stripped markdown + appends "## Backlinks" section
 craft docs get <id> --raw             # keeps <page>/<content> wrappers
 craft docs get <id> --json            # structured, adds `backlinks: [...]` at top level
@@ -193,7 +201,9 @@ On Mac with Craft app installed, the CLI reads from Craft's local SQLite FTS5 da
 
 - **auto** (default): try local first with a bounded helper-process probe; fall back to API. Use on Mac with Craft installed.
 - **api**: never touch local, every read hits the API. Use on Linux, Docker containers, or any host where Craft is not installed. Slower reads but identical behavior; journal (undo/log/diff) keeps working.
-- **local**: local-only. Fails clearly if Craft Desktop data is unavailable or the query needs API-only filters. Use for debugging local cache behavior.
+- **local**: require the local store for local-capable listing/search commands. API-required commands still use REST. Use this source for debugging local cache behavior.
+
+Local-capable commands are deliberately narrow: unfiltered `docs ls`, simple `docs search`, and `media local`. Full document trees, daily notes, blocks, tasks, collections, filtered searches, and writes use REST. Keep `auto` so the CLI makes that routing decision instead of forcing every read over the network.
 
 **How to set it (agent workflow):**
 
@@ -201,7 +211,7 @@ On Mac with Craft app installed, the CLI reads from Craft's local SQLite FTS5 da
 craft source              # check current source; emits a status block to relay to the user
 craft source api          # persist api-only in config.json; survives shell restarts
 craft source auto         # persist local-first with API fallback
-craft source local        # persist local-only
+craft source local        # require local for eligible list/search reads
 craft source --json       # machine-readable status for scripting
 ```
 
@@ -225,16 +235,22 @@ The journal at `~/.cache/craft-cli/journal.db` is cross-platform and always on �
 
 Hybrid local reads are bounded by `CRAFT_LOCAL_TIMEOUT_MS` (default 1500ms). If local discovery/list/search times out or errors, read commands fall back to the API without printing local document content to logs.
 
+## Current Craft API coverage
+
+The 2026-09-04 API alignment includes collection-view CRUD and active-view selection, space-wide tasks through documented `scope=all`, page styling and separator fields, typed media upload/insert, local media resolution, and safe media replacement. Use `craft raw` for a newly published endpoint before a dedicated wrapper exists.
+
+Craft app 3.6 features such as editable inline tags, arbitrary custom colors, and Daily Notes range export do not currently have documented REST operations. Do not imply CLI support for an app-only feature.
+
 ## Top recipes
 
 ### 1. Fetch a specific doc by title
 
 ```sh
-id=$(craft docs search "^LTM$" --json | jq -r '.items[0].documentId')
+id=$(craft docs search "^LTM$" --source api --json | jq -r '.items[0].documentId')
 craft docs get "$id"
 ```
 
-Or for a fuzzy title → use `--include` mode (case-insensitive phrase match):
+Exact regular-expression matching is an API query. For a fuzzy phrase match, use `--include` mode:
 
 ```sh
 craft docs search "LTM" --include --json | jq -r '.items[].documentId'
@@ -348,8 +364,8 @@ craft cat <id1> <id2> <id3>
 
 ## Caveats (from real trials — see `~/dev/craft-docs/craft-do-api/trials/CAVEATS.md`)
 
-1. **`docs search` defaults to `regexps` mode.** The API's `include` mode silently misses tokens with underscores. Use `--include` only for phrase/word matching, stick with the default for anything else.
-2. **Regex is RE2.** Escape backslashes for the shell: `craft docs search 'tag_\w+'`.
+1. **Search syntax depends on routing.** In `source auto`, eligible `docs search` queries use local FTS5. Add API-only filters or `--source api` only when you specifically need server-side RE2 behavior. The API's `include` mode silently misses tokens with underscores.
+2. **API regex is RE2.** Escape backslashes for the shell: `craft docs search 'tag_\w+' --source api`.
 3. **`docs get` strips the `<page>/<pageTitle>/<content>` wrapper by default.** Pass `--raw` if you need the original, or `--json` for structured blocks.
 4. **The CLI refuses to insert blocks without an explicit target.** The API silently routes `position: end` with no pageId/date to today's daily note — a footgun. The CLI throws before sending.
 5. **`maxDepth: 0` omits the `content` key entirely** (not an empty array). Use `"content" in obj` checks when parsing.

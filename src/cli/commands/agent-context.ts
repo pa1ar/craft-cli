@@ -11,8 +11,36 @@ export async function runAgentContext(argv: string[]): Promise<void> {
     purpose: "Agent-first CLI for Craft Docs reads, writes, search, tasks, uploads, and local-first PKM workflows.",
     defaults: {
       source: "auto",
-      sourceMeaning: "read local Craft Desktop cache when available; fall back to API",
+      sourceMeaning: "keep auto on macOS: eligible reads use Craft Desktop's cache first, then fall back to API",
       output: "concise text by default, JSON with --json, projection with --select",
+    },
+    readRouting: {
+      rule: "Do not force --api for ordinary macOS reads. Keep source=auto unless the task explicitly needs authoritative remote state.",
+      localFirst: [
+        "docs ls without location/folder/date/metadata filters",
+        "docs search without --include, --fetch-blocks, folder/location, or document IDs",
+        "media local for an on-device image/video/file asset",
+      ],
+      api: [
+        "docs get, docs daily, blocks, tasks, collections, and links",
+        "filtered or fetch-blocks document queries",
+        "all writes",
+      ],
+      fallback: "source=auto falls back to API when a local read is unavailable or ineligible",
+      verify: "craft source --json; craft doctor --json reports local availability",
+    },
+    currentApiCoverage: {
+      supported: [
+        "collection view CRUD and active view",
+        "space-wide tasks with scope=all",
+        "page styling and separator block fields",
+        "typed media upload, local resolution, analysis, and safe replacement",
+      ],
+      appOnlyWithoutDocumentedRest: [
+        "editable inline tags",
+        "arbitrary custom colors",
+        "Daily Notes range export",
+      ],
     },
     current: {
       source,

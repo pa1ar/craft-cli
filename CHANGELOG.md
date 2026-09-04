@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Changed
+- Agent-facing skill, README, CLI help, and `agent-context` now make local-first read routing explicit, distinguish local-capable commands from REST-only operations, and document current Craft API coverage without claiming app-only features.
+
 ## [0.6.0] - 2026-09-04
 
 ### Added

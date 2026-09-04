@@ -31,6 +31,9 @@ interface StatusPayload {
   readsLocal: boolean;
   reads: string;
   writes: string;
+  localEligible: string[];
+  apiRequired: string[];
+  policy: string;
   override: string;
 }
 
@@ -46,15 +49,15 @@ async function buildStatus(resolved: ResolvedSource): Promise<StatusPayload> {
   if (isApi) {
     reads = "API only - local Craft store is not consulted";
   } else if (resolved.source === "local" && localAvailable) {
-    reads = "local Craft store only";
+    reads = "local required for eligible list/search reads; API-required commands still use REST";
   } else if (resolved.source === "local" && localStatus === "timeout") {
-    reads = "local only (probe timed out; read commands fail instead of API fallback)";
+    reads = "local probe timed out; eligible list/search reads fail instead of API fallback; API-required commands still use REST";
   } else if (resolved.source === "local" && localStatus === "error") {
-    reads = "local only (probe failed; read commands fail instead of API fallback)";
+    reads = "local probe failed; eligible list/search reads fail instead of API fallback; API-required commands still use REST";
   } else if (resolved.source === "local") {
-    reads = "local only (no local Craft store found; read commands fail)";
+    reads = "no local Craft store found; eligible list/search reads fail; API-required commands still use REST";
   } else if (localAvailable) {
-    reads = "local Craft store (auto, local store detected)";
+    reads = "local-first for eligible list/search reads; API fallback and API-required commands remain available";
   } else if (localStatus === "timeout") {
     reads = "API (auto local probe timed out; reads fall back to API)";
   } else if (localStatus === "error") {
@@ -69,6 +72,13 @@ async function buildStatus(resolved: ResolvedSource): Promise<StatusPayload> {
     readsLocal: localAvailable,
     reads,
     writes: "API (journal at ~/.cache/craft-cli/journal.db still records for undo/log/diff)",
+    localEligible: [
+      "docs ls without API-only filters",
+      "docs search without --include, --fetch-blocks, folder/location, or document IDs",
+      "media local for on-device assets",
+    ],
+    apiRequired: ["docs get/daily", "blocks", "tasks", "collections", "links", "all writes"],
+    policy: "keep source=auto on macOS; do not force --api for ordinary reads",
     override: isApi
       ? "CRAFT_SOURCE=auto <cmd>  or  --source auto on individual read commands"
       : "CRAFT_SOURCE=api <cmd>  or  --source api / --api on individual read commands",
@@ -80,6 +90,9 @@ function printStatus(payload: StatusPayload, headline?: string): void {
   console.log(`${bold("source")}   ${payload.source}  ${dim(`(setting: ${payload.setting})`)}`);
   console.log(`${bold("legacy")}   mode ${payload.legacyMode}`);
   console.log(`${bold("reads")}    ${payload.reads}`);
+  console.log(`${bold("local")}    ${payload.localEligible.join("; ")}`);
+  console.log(`${bold("api")}      ${payload.apiRequired.join("; ")}`);
+  console.log(`${bold("policy")}   ${payload.policy}`);
   console.log(`${bold("writes")}   ${payload.writes}`);
   console.log(`${bold("override")} ${payload.override}`);
 }
