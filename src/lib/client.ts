@@ -155,7 +155,7 @@ export class CraftClient {
           const retryAfter = Number(res.headers.get("retry-after"));
           const wait = Number.isFinite(retryAfter) && retryAfter > 0
             ? retryAfter * 1000
-            : this.backoffBaseMs * Math.pow(2, attempt);
+            : retryDelayMs(this.backoffBaseMs, attempt);
           await sleep(wait);
           continue;
         }
@@ -174,7 +174,7 @@ export class CraftClient {
           : e;
         lastError = requestError;
         if (attempt < this.retries) {
-          await sleep(this.backoffBaseMs * Math.pow(2, attempt));
+          await sleep(retryDelayMs(this.backoffBaseMs, attempt));
           continue;
         }
         throw requestError;
@@ -190,6 +190,11 @@ function isAbortError(error: unknown): boolean {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Exponential retry delay with 50%-150% jitter to avoid synchronized retries. */
+export function retryDelayMs(baseMs: number, attempt: number, random = Math.random): number {
+  return Math.round(baseMs * Math.pow(2, attempt) * (0.5 + random()));
 }
 
 /** Run an async mapping over items with bounded concurrency. */

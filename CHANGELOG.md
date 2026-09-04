@@ -13,6 +13,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ### Changed
 - Media uploads now infer common image, video, audio, and PDF content types.
+- Public block types now include the latest Craft page styling and separator fields from the 2026-09-04 upstream OpenAPI snapshot.
+- Retries now add jitter when Craft does not return `Retry-After`, matching current API guidance.
 
 ## [0.5.1] - 2026-08-27
 

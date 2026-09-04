@@ -1,5 +1,5 @@
 import type { CraftClient } from "./client.ts";
-import type { Block, Position, ItemsResponse, BlockSearchHit } from "./types.ts";
+import type { Block, Position, ItemsResponse, BlockSearchHit, PageStyling, SeparatorStyle } from "./types.ts";
 
 export interface GetBlockOptions {
   maxDepth?: number;
@@ -23,6 +23,8 @@ export interface BlockInsert {
   size?: string;
   width?: number;
   aspectRatio?: number;
+  styling?: PageStyling;
+  separatorStyle?: SeparatorStyle;
   // richUrl
   title?: string;
   description?: string;

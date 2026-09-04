@@ -1,6 +1,6 @@
 // mock-fetch unit tests for CraftClient: retry, error normalization, query building
 import { test, expect, describe, beforeEach } from "bun:test";
-import { CraftClient, parallel, walkBlocks, findBlocks } from "../../src/lib/client.ts";
+import { CraftClient, parallel, retryDelayMs, walkBlocks, findBlocks } from "../../src/lib/client.ts";
 import { CraftError } from "../../src/lib/errors.ts";
 
 function mockFetch(handler: (url: URL, init: RequestInit) => Response | Promise<Response>): typeof fetch {
@@ -143,6 +143,12 @@ describe("CraftClient.request", () => {
 });
 
 describe("helpers", () => {
+  test("retry delay uses exponential backoff with jitter", () => {
+    expect(retryDelayMs(500, 0, () => 0)).toBe(250);
+    expect(retryDelayMs(500, 2, () => 0.5)).toBe(2000);
+    expect(retryDelayMs(500, 2, () => 1)).toBe(3000);
+  });
+
   test("parallel limits concurrency", async () => {
     let active = 0;
     let max = 0;

@@ -355,8 +355,8 @@ craft cat <id1> <id2> <id3>
 5. **`maxDepth: 0` omits the `content` key entirely** (not an empty array). Use `"content" in obj` checks when parsing.
 6. **Error exit codes**: 0 ok, 1 user error, 2 API error, 3 auth, 4 not found. Script accordingly.
 7. **Large list latency**: `craft docs ls` with no filter takes ~3.4s via API. In `source auto` on a Mac with Craft installed, it's instant (~27ms). On Linux / headless hosts, run `craft source api` once after setup to skip local discovery entirely, or pass `--source api`/`--api` per-command, or set `CRAFT_SOURCE=api` in the environment.
-8. **Rate limits**: generous. 60 parallel calls tested without 429. Default concurrency in scan pipelines can be 15+.
-9. **Tasks & collections have inconsistent payload keys** (`tasks` vs `tasksToUpdate` vs `idsToDelete`). The CLI abstracts this — you don't need to care unless you use `craft raw`. The live task API also accepts undocumented `scope=all`; `craft tasks` uses it by default so unscheduled document tasks are not lost.
+8. **Rate limits**: 50 requests per 10 seconds per public IP, 100 requests per 60 seconds per Craft space, and 20,000 blocks read/written per 60 seconds per space. Respect `Retry-After`; space and block budgets may appear in `X-RateLimit-*` and `X-BlockBudget-*` headers.
+9. **Tasks & collections have inconsistent payload keys** (`tasks` vs `tasksToUpdate` vs `idsToDelete`). The CLI abstracts this — you don't need to care unless you use `craft raw`. The current task API documents `scope=all`; `craft tasks` uses it by default so unscheduled document tasks are not lost.
 10. **Partial block updates preserve children.** `craft blocks update <id> --markdown "new"` renames without dropping the sub-tree.
 11. **Daily note auto-creates** when you append with `--date today` and no note exists yet.
 12. **When the user's Craft conventions call for AI attribution, use the harness-neutral `#by/ai` tag.** User instructions to preserve source content exactly or omit attribution take precedence.

@@ -3,6 +3,30 @@
 
 export type DateInput = string; // "YYYY-MM-DD" | "today" | "yesterday" | "tomorrow"
 
+export type SeparatorStyle = "line" | "doodle" | "washi" | `washi(${string})`;
+
+export interface PageCoverImage {
+  url: string;
+  aspectRatio?: number;
+  backgroundColor?: string;
+  width?: number;
+  hasTransparency?: boolean;
+  unsplashAttribution?: string;
+  cropMask?: { x?: number; y?: number; width?: number; height?: number };
+}
+
+export interface PageStyling {
+  coverImage?: PageCoverImage;
+  pageWidth?: string;
+  fontFamily?: "system" | "system-serif" | "system-rounded" | "system-mono" | string;
+  textColor?: string;
+  backgroundColor?: string;
+  backdrop?: string;
+  themeId?: string;
+  separatorStyle?: SeparatorStyle;
+  themeColor?: string;
+}
+
 export interface Block {
   id: string;
   type: string; // "page" | "text" | "image" | "collection" | "whiteboard" | ...
@@ -10,7 +34,15 @@ export interface Block {
   markdown?: string;
   url?: string;
   altText?: string;
+  mimeType?: string;
+  fileName?: string;
+  fileSize?: number;
+  size?: string;
+  width?: number;
+  aspectRatio?: number;
   font?: string;
+  styling?: PageStyling;
+  separatorStyle?: SeparatorStyle;
   content?: Block[];
   metadata?: BlockMetadata;
 }
