@@ -147,9 +147,12 @@ craft skills validate media-analyze
 craft skills run media-analyze analyze <blockId> --estimate
 
 # curated media alias
+craft media local <blockId>
+craft media local <blockId> --all --json
 craft media analyze <blockId>
 craft media analyze <blockId> --estimate
 craft media analyze <blockId> --max-cost 0.50 --json
+craft media replace <blockId> edited.mov --content-type video/quicktime
 
 # escape hatch for any endpoint the CLI doesn't cover yet
 craft raw GET /connection
@@ -170,13 +173,15 @@ Skill runtime contract:
 - default max cost is EUR 1 unless `--max-cost` is passed.
 - `--estimate` returns the manifest estimate without running expensive work.
 
-Bundled media skill:
+Local media and bundled analysis:
 
 ```sh
+craft media local <blockId>
 craft media analyze <blockId>
+craft media replace <blockId> <file>
 ```
 
-Alias for `craft skills run media-analyze analyze <blockId>`. It downloads media to `~/.cache/craft-cli/media-analyze`, uses OpenAI for generic analysis/transcription, and writes a Craft-visible run block under the source block with status, analysis, transcript when available, contact-sheet path, metadata JSON, and model/cost metadata. Requires `OPENAI_API_KEY`; video/audio extraction needs `ffmpeg`/`ffprobe`.
+`media local` resolves an existing full on-device asset through Craft's `OnDeviceAssets/index.json`, falling back to a preview only when necessary. Treat the returned path as read-only and copy it before editing. `media analyze` prefers that local file, falls back to the fresh signed URL, uses OpenAI for generic analysis/transcription, and writes a Craft-visible run block under the source block. `media replace` uploads before the old block, verifies the same media type, then deletes the old block; the replacement has a new block ID and blocks with children or comments are refused. Analysis requires `OPENAI_API_KEY`; video/audio extraction needs `ffmpeg`/`ffprobe`.
 
 `craft doctor` and `craft whoami` use short health-check retries/timeouts. If Craft's `/connection` endpoint stalls, they should fail quickly with a clear timeout instead of hanging through normal API retry windows.
 
@@ -363,6 +368,7 @@ craft cat <id1> <id2> <id3>
 15. **Search freshness lag**: newly created child pages may appear in parent reads (`docs get <parentId> --depth N`) before they show up in `docs search`. If search misses something recent, fetch the parent with depth as a fallback: `craft docs get <parentId> --depth 2` or `craft docs daily --depth 2`.
 16. **Typed block insert fidelity**: `craft blocks insert --file blocks.json` accepts every native block variant (`text`, `page`, `richUrl`, `video`, `image`, `file`, `line`, `code`, `table`) with its native fields (`url`, `title`, `description`, `listStyle`, `textStyle`, `color`, `decorations`, nested `content`, etc.). Use this — not `blocks append --markdown` — when copying blocks between docs, because `append` goes through markdown parsing and loses native types (video/richUrl/image collapse to text).
 17. **r.craft.do URLs are signed and time-limited** — they rotate on each `GET /blocks` fetch. When cloning `video`/`image`/`file` blocks between docs, always fetch the source LIVE right before inserting and pass the fresh URL; omit `uploaded` so the API re-fetches and re-signs. If you pass a stale URL with `uploaded: true`, the block will be created but the asset will display "not available" when the signature expires. `normalizeCraftMediaBlocks` is available as an opt-in helper for the rare case where you want to force-store an as-is URL.
+18. **Media replacement creates a new block ID.** The REST API can update media layout/metadata but not its asset URL. `craft media replace` therefore uploads before the old block, verifies the replacement, and deletes the old block only after verification. Direct links to the old block do not migrate.
 
 ## Library usage (Raycast / Node scripts)
 

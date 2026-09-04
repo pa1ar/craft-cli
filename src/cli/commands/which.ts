@@ -13,6 +13,8 @@ const CAPABILITIES = [
   { keys: ["add task", "create task", "task inbox"], command: "craft tasks add <markdown> --to inbox|daily|doc", why: "create task" },
   { keys: ["collection", "collections", "database", "kanban", "gallery", "view", "views", "board"], command: "craft col views <collectionId>", why: "manage collection view configuration and active view" },
   { keys: ["upload", "image", "file", "media"], command: "craft upload <file> (--parent ID | --date D)", why: "upload and insert media" },
+  { keys: ["local media", "media path", "offline asset"], command: "craft media local <blockId>", why: "resolve on-device Craft media" },
+  { keys: ["replace media", "swap media", "edited media"], command: "craft media replace <blockId> <file>", why: "safely replace an existing media block" },
   { keys: ["skills", "skill", "automation", "extension"], command: "craft skills search <query>", why: "discover bundled/local automation skills" },
   { keys: ["analyze", "analysis", "video", "audio", "transcript", "media"], command: "craft media analyze <blockId>", why: "analyze a Craft media block with OpenAI-backed bundled skill" },
   { keys: ["backlink", "backlinks", "incoming", "links"], command: "craft links in <blockId>", why: "find backlinks" },

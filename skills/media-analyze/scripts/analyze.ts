@@ -14,6 +14,7 @@ export interface MediaCandidate {
 interface MediaMetadata {
   url: string;
   kind: string;
+  source: "local" | "download";
   filePath?: string;
   bytes?: number;
   contentType?: string | null;
@@ -53,17 +54,22 @@ export async function analyzeMedia(input: SkillRunInput): Promise<SkillRunOutput
   const metadata: MediaMetadata = {
     url: candidate.url,
     kind: candidate.kind,
+    source: "download",
     warnings: [],
   };
 
-  const downloaded = await downloadMedia(candidate.url, runDir);
-  metadata.filePath = downloaded.path;
-  metadata.bytes = downloaded.bytes;
-  metadata.contentType = downloaded.contentType;
+  const localFile = typeof input.flags["local-file"] === "string"
+    ? input.flags["local-file"] as string
+    : undefined;
+  const mediaFile = await resolveMediaFile(candidate.url, runDir, localFile);
+  metadata.source = mediaFile.source;
+  metadata.filePath = mediaFile.path;
+  metadata.bytes = mediaFile.bytes;
+  metadata.contentType = mediaFile.contentType;
 
   const ffprobePath = await commandPath("ffprobe");
   if (ffprobePath) {
-    metadata.ffprobe = await ffprobe(downloaded.path);
+    metadata.ffprobe = await ffprobe(mediaFile.path);
   } else if (candidate.kind === "video" || candidate.kind === "audio") {
     metadata.warnings.push("ffprobe not found; media metadata is limited");
   }
@@ -73,15 +79,15 @@ export async function analyzeMedia(input: SkillRunInput): Promise<SkillRunOutput
   let contactSheetPath: string | undefined;
   if ((candidate.kind === "video" || candidate.kind === "audio") && ffmpegPath) {
     const audioPath = candidate.kind === "video"
-      ? await extractAudio(downloaded.path, runDir)
-      : downloaded.path;
+      ? await extractAudio(mediaFile.path, runDir)
+      : mediaFile.path;
     transcript = await transcribeAudio(audioPath);
   } else if (candidate.kind === "video" || candidate.kind === "audio") {
     metadata.warnings.push("ffmpeg not found; transcript extraction skipped");
   }
 
   if (candidate.kind === "video" && ffmpegPath) {
-    contactSheetPath = await createContactSheet(downloaded.path, runDir).catch((e) => {
+    contactSheetPath = await createContactSheet(mediaFile.path, runDir).catch((e) => {
       metadata.warnings.push(`contact sheet failed: ${(e as Error).message}`);
       return undefined;
     });
@@ -91,7 +97,9 @@ export async function analyzeMedia(input: SkillRunInput): Promise<SkillRunOutput
     candidate,
     metadata,
     transcript,
-    imageUrl: candidate.kind === "image" ? candidate.url : undefined,
+    imageUrl: candidate.kind === "image"
+      ? await imageInputUrl(candidate.url, mediaFile.path, mediaFile.contentType, metadata.warnings)
+      : undefined,
     contactSheetPath,
   });
 
@@ -185,6 +193,29 @@ async function downloadMedia(url: string, dir: string): Promise<{ path: string; 
   return { path, bytes: info.size, contentType };
 }
 
+export async function resolveMediaFile(
+  url: string,
+  dir: string,
+  localFile?: string,
+): Promise<{ path: string; bytes: number; contentType: string | null; source: "local" | "download" }> {
+  if (localFile) {
+    try {
+      const info = await stat(localFile);
+      if (info.isFile()) {
+        return {
+          path: localFile,
+          bytes: info.size,
+          contentType: await sniffContentType(localFile),
+          source: "local",
+        };
+      }
+    } catch {
+      // The on-device cache can be evicted between resolution and analysis.
+    }
+  }
+  return { ...await downloadMedia(url, dir), source: "download" };
+}
+
 function extensionForContentType(contentType: string | null): string | null {
   if (!contentType) return null;
   if (contentType.includes("mp4")) return ".mp4";
@@ -192,6 +223,37 @@ function extensionForContentType(contentType: string | null): string | null {
   if (contentType.includes("wav")) return ".wav";
   if (contentType.includes("jpeg")) return ".jpg";
   if (contentType.includes("png")) return ".png";
+  return null;
+}
+
+async function sniffContentType(path: string): Promise<string | null> {
+  const ext = extname(path).toLowerCase();
+  const fromExtension: Record<string, string> = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".mp4": "video/mp4",
+    ".m4v": "video/mp4",
+    ".mov": "video/quicktime",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
+    ".wav": "audio/wav",
+    ".pdf": "application/pdf",
+  };
+  if (fromExtension[ext]) return fromExtension[ext];
+
+  const header = new Uint8Array(await Bun.file(path).slice(0, 16).arrayBuffer());
+  const ascii = String.fromCharCode(...header);
+  if (header[0] === 0x89 && ascii.slice(1, 4) === "PNG") return "image/png";
+  if (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) return "image/jpeg";
+  if (ascii.startsWith("GIF8")) return "image/gif";
+  if (ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP") return "image/webp";
+  if (ascii.startsWith("%PDF")) return "application/pdf";
+  if (ascii.slice(4, 8) === "ftyp") {
+    return ascii.slice(8, 12) === "qt  " ? "video/quicktime" : "video/mp4";
+  }
   return null;
 }
 
@@ -309,9 +371,22 @@ async function runOpenAIAnalysis(input: {
   return extractResponseText(await response.json());
 }
 
-async function imageFileToDataUrl(path: string): Promise<string> {
+async function imageFileToDataUrl(path: string, contentType = "image/jpeg"): Promise<string> {
   const bytes = Buffer.from(await Bun.file(path).arrayBuffer());
-  return `data:image/jpeg;base64,${bytes.toString("base64")}`;
+  return `data:${contentType};base64,${bytes.toString("base64")}`;
+}
+
+async function imageInputUrl(
+  remoteUrl: string,
+  localPath: string,
+  contentType: string | null,
+  warnings: string[],
+): Promise<string> {
+  if (contentType && ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(contentType)) {
+    return imageFileToDataUrl(localPath, contentType);
+  }
+  warnings.push("local image format is not supported as an inline analysis input; used the signed Craft URL");
+  return remoteUrl;
 }
 
 function extractResponseText(response: unknown): string {
@@ -365,6 +440,7 @@ function mockOutput(candidate: MediaCandidate): SkillRunOutput {
   const metadata: MediaMetadata = {
     url: candidate.url,
     kind: candidate.kind,
+    source: "download",
     filePath: "/tmp/mock-media",
     bytes: 123,
     contentType: "video/mp4",

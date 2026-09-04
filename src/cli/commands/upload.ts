@@ -40,12 +40,20 @@ export async function runUpload(argv: string[]) {
   console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `${res.blockId}  ${res.assetUrl}`);
 }
 
-function inferContentType(file: string): string {
+export function inferContentType(file: string): string {
   const lower = file.toLowerCase();
   if (lower.endsWith(".png")) return "image/png";
   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
   if (lower.endsWith(".gif")) return "image/gif";
   if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".heic") || lower.endsWith(".heif")) return "image/heic";
+  if (lower.endsWith(".tif") || lower.endsWith(".tiff")) return "image/tiff";
+  if (lower.endsWith(".mp4") || lower.endsWith(".m4v")) return "video/mp4";
+  if (lower.endsWith(".mov")) return "video/quicktime";
+  if (lower.endsWith(".webm")) return "video/webm";
+  if (lower.endsWith(".mp3")) return "audio/mpeg";
+  if (lower.endsWith(".m4a")) return "audio/mp4";
+  if (lower.endsWith(".wav")) return "audio/wav";
   if (lower.endsWith(".pdf")) return "application/pdf";
   return "application/octet-stream";
 }

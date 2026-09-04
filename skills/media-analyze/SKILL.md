@@ -25,7 +25,7 @@ V1 behavior:
 - OpenAI is the only provider.
 - Default cost cap is EUR 1; manifest estimate is EUR 0.25.
 - `craft-cli` fetches Craft block context and performs Craft writes.
-- The skill downloads media to `~/.cache/craft-cli/media-analyze`.
+- The curated alias prefers Craft's full on-device asset and falls back to downloading the fresh signed URL into `~/.cache/craft-cli/media-analyze`.
 - Video runs use `ffprobe` for metadata and `ffmpeg` for audio/contact-sheet artifacts when available.
 - Raw intermediate files stay local; the Craft run block stores analysis, transcript text, contact-sheet path, and metadata JSON.
 

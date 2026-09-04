@@ -25,6 +25,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
       CRAFT_PROFILE: "default saved profile name",
       CRAFT_SOURCE: "auto|api|local runtime source override",
       CRAFT_LOCAL_PATH: "override local Craft database discovery",
+      CRAFT_ON_DEVICE_ASSETS_PATH: "override Craft OnDeviceAssets discovery",
     },
     commands: [
       { command: "doctor", use: "verify auth, API, source, and local store status" },
@@ -45,6 +46,8 @@ export async function runAgentContext(argv: string[]): Promise<void> {
       { command: "which", use: "map capability words to commands" },
       { command: "skills ls/search/show/validate/run", use: "discover and run bundled/local automation skills" },
       { command: "media analyze <blockId>", use: "curated alias for media-analyze skill with EUR 1 default cap" },
+      { command: "media local <blockId>", use: "resolve a Craft media block to an existing on-device full asset" },
+      { command: "media replace <blockId> <file>", use: "upload and verify replacement before deleting the old media block" },
     ],
     exitCodes: {
       "0": "ok",

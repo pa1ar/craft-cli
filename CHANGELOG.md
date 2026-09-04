@@ -8,6 +8,12 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Added
+- Local Craft media workflows: `craft media local` resolves on-device full assets, analysis prefers them over downloads, and `craft media replace` performs a verified upload-before-delete swap.
+
+### Changed
+- Media uploads now infer common image, video, audio, and PDF content types.
+
 ## [0.5.1] - 2026-08-27
 
 ### Changed

@@ -155,7 +155,9 @@ craft raw GET|POST|... /path     escape hatch for any API endpoint
 craft skills ls/search/show      discover bundled + ~/.craft-cli/skills automations
 craft skills validate <path|name>
 craft skills run <name> <command> [...args] [--estimate] [--max-cost EUR]
-craft media analyze <blockId>    analyze Craft media with bundled media-analyze skill
+craft media local <blockId>      resolve the on-device full asset path
+craft media analyze <blockId>    analyze Craft media, preferring the local asset
+craft media replace <blockId> <file>  upload, verify, and replace media
 ```
 
 Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--source auto|api|local`, `--api`, `--dry-run` on writes.
@@ -189,12 +191,19 @@ Skills run as subprocesses with structured JSON stdin/stdout. The skill can prop
 ### Media analysis
 
 ```sh
+craft media local <blockId>
+craft media local <blockId> --all --json
 craft media analyze <blockId>
 craft media analyze <blockId> --estimate
 craft media analyze <blockId> --max-cost 0.50 --json
+craft media replace <blockId> edited.mov --content-type video/quicktime
 ```
 
-`craft media analyze` is a curated alias for `craft skills run media-analyze analyze <blockId>`. V1 is generic media analysis only, OpenAI-first, with a default EUR 1 cap. Useful artifacts are written into a Craft-visible run block under the source block: final analysis, transcript text when available, contact-sheet path, metadata JSON, model/cost metadata, and failure/partial status. Raw intermediate media files stay in `~/.cache/craft-cli/media-analyze`.
+`craft media local` reads Craft's `OnDeviceAssets/index.json` and prints the existing full-resolution asset path, falling back to a preview only when no full asset is present. These files are owned by Craft: copy them before editing.
+
+`craft media analyze` is a curated alias for `craft skills run media-analyze analyze <blockId>`. It prefers an on-device asset and falls back to the fresh signed Craft URL. V1 is generic media analysis only, OpenAI-first, with a default EUR 1 cap. Useful artifacts are written into a Craft-visible run block under the source block: final analysis, transcript text when available, contact-sheet path, metadata JSON, model/cost metadata, and failure/partial status. Raw intermediate media files stay in `~/.cache/craft-cli/media-analyze`.
+
+`craft media replace` validates the existing image/video/file block, uploads the replacement immediately before it, verifies that the new block has the same media type, and only then deletes the old block. Craft's REST API cannot change an existing media block's URL, so the replacement receives a new block ID. The command refuses blocks with children or comments.
 
 ## Why this is faster than the API or MCP
 

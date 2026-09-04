@@ -114,7 +114,9 @@ Misc
   wb el {ls|add|update|rm} <wbId> [...]
   raw <METHOD> <path> [--query k=v] [--body FILE|-] [--header k:v]
   skills {ls|search|show|validate|run} [...]         demand-loaded automation skills
-  media analyze <blockId> [--estimate] [--max-cost EUR]  analyze media block via bundled skill
+  media local <blockId> [--all]                         resolve on-device media paths
+  media analyze <blockId> [--estimate] [--max-cost EUR] analyze media, preferring on-device files
+  media replace <blockId> <file> [--content-type TYPE]  upload, verify, then replace media block
 
 Global
   --profile NAME    override active profile
@@ -130,6 +132,7 @@ Env overrides
   CRAFT_SOURCE            override persistent source: auto | api | local
   CRAFT_MODE              legacy override: api | hybrid
   CRAFT_LOCAL_PATH        override local Craft database location
+  CRAFT_ON_DEVICE_ASSETS_PATH  override Craft OnDeviceAssets discovery
 `;
 
 async function main() {
