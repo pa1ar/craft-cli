@@ -8,6 +8,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-04
+
 ### Changed
 - Agent-facing skill, README, CLI help, and `agent-context` now make local-first read routing explicit, distinguish local-capable commands from REST-only operations, and document current Craft API coverage without claiming app-only features.
 
@@ -77,7 +79,8 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/pa1ar/craft-cli/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/pa1ar/craft-cli/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/pa1ar/craft-cli/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/pa1ar/craft-cli/compare/v0.4.0...v0.5.0
