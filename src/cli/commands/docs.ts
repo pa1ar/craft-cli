@@ -6,7 +6,7 @@ import {
   attachBacklinksJson,
 } from "../render.ts";
 import { listLocalDocsSafe, searchLocalDocsSafe } from "../local-safe.ts";
-import { shouldFallbackToApi, shouldTryLocal, sourceFromArgs } from "../source.ts";
+import { shouldTryLocal, sourceFromArgs } from "../source.ts";
 import { $ } from "bun";
 
 export async function runDocs(argv: string[]) {
@@ -66,10 +66,10 @@ export async function runDocs(argv: string[]) {
           );
           console.error(dim(`\n${docs.length} documents (local)`));
           return;
-        } else if (!shouldFallbackToApi(source)) {
+        } else if (source === "local") {
           throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
         }
-      } else if (!shouldFallbackToApi(source)) {
+      } else if (source === "local") {
         throw new Error("this docs ls query is not supported by --source local; use --source auto or --source api");
       }
 
@@ -125,10 +125,10 @@ export async function runDocs(argv: string[]) {
           }
           console.error(dim(`\n${results.length} matches (local)`));
           return;
-        } else if (!shouldFallbackToApi(source)) {
+        } else if (source === "local") {
           throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
         }
-      } else if (!shouldFallbackToApi(source)) {
+      } else if (source === "local") {
         throw new Error("this docs search query is not supported by --source local; use --source auto or --source api");
       }
 
