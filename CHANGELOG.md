@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Fixed
+- Profile-scoped local document listing and search now select the matching Craft space, and explicit `--source api` reads correctly bypass the local store.
+
 ## [0.6.1] - 2026-09-04
 
 ### Changed

@@ -290,6 +290,18 @@ export function discoverLocalStore(spaceId?: string): LocalStore | null {
   return null;
 }
 
+/** Select the index whose final namespace component matches the Craft space.
+ * Composite filenames use `<account-or-primary-space>||<spaceId>`, so a plain
+ * substring match can route the primary space to one of its secondary spaces. */
+export function selectSpaceIndexFile(sqliteFiles: string[], spaceId: string): string | undefined {
+  const exact = `SearchIndex_${spaceId}.sqlite`;
+  return sqliteFiles.find((file) => file === exact)
+    ?? sqliteFiles.find((file) => {
+      const namespace = basename(file, ".sqlite").replace("SearchIndex_", "");
+      return namespace.split("||").at(-1) === spaceId;
+    });
+}
+
 function discoverInBase(base: string, spaceId?: string): LocalStore | null {
   const searchDir = join(base, "Search");
   const ptsBase = join(base, "PlainTextSearch");
@@ -307,7 +319,7 @@ function discoverInBase(base: string, spaceId?: string): LocalStore | null {
 
   // if spaceId provided, look for matching file
   if (spaceId) {
-    const match = sqliteFiles.find((f) => f.includes(spaceId));
+    const match = selectSpaceIndexFile(sqliteFiles, spaceId);
     if (!match) return null;
     const dbPath = join(searchDir, match);
     if (!validateSchema(dbPath)) {

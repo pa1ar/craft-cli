@@ -7,6 +7,7 @@ import {
 } from "../render.ts";
 import { listLocalDocsSafe, searchLocalDocsSafe } from "../local-safe.ts";
 import { shouldFallbackToApi, shouldTryLocal, sourceFromArgs } from "../source.ts";
+import { resolveProfile } from "../config.ts";
 import { $ } from "bun";
 
 export async function runDocs(argv: string[]) {
@@ -32,6 +33,17 @@ export async function runDocs(argv: string[]) {
   });
   const source = sourceFromArgs(args);
 
+  let _localSpaceId: string | undefined;
+  let _localSpaceIdResolved = false;
+  async function getLocalSpaceId() {
+    if (!_localSpaceIdResolved) {
+      const explicitProfile = typeof args.flags.profile === "string" ? args.flags.profile : undefined;
+      _localSpaceId = (await resolveProfile(explicitProfile)).spaceId;
+      _localSpaceIdResolved = true;
+    }
+    return _localSpaceId;
+  }
+
   // lazy client - only built when API path is needed
   let _client: Awaited<ReturnType<typeof buildClient>>["client"] | undefined;
   async function getClient() {
@@ -48,28 +60,35 @@ export async function runDocs(argv: string[]) {
         && !args.flags.metadata;
 
       if (localEligible) {
-        // enrich with PTS data only for --json (needs isDailyNote, tags)
-        const local = await listLocalDocsSafe({ enrich: !!args.flags.json });
-        if (local.status === "available") {
-          const docs = local.docs;
-          if (args.flags.json) {
-            console.log(jsonOutForArgs({ items: docs.map((d) => ({ id: d.id, title: d.title, isDailyNote: d.isDailyNote, tags: d.tags })) }, args.flags));
-            return;
+        const spaceId = await getLocalSpaceId();
+        if (!spaceId) {
+          if (!shouldFallbackToApi(source)) {
+            throw new Error("active profile has no space ID for local reads; rerun craft setup or use --source api");
           }
-          console.log(
-            table(
-              docs.map((d) => ({
-                id: d.id,
-                title: d.title,
-              }))
-            )
-          );
-          console.error(dim(`\n${docs.length} documents (local)`));
-          return;
-        } else if (!shouldFallbackToApi(source)) {
-          throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
+        } else {
+          // enrich with PTS data only for --json (needs isDailyNote, tags)
+          const local = await listLocalDocsSafe({ enrich: !!args.flags.json, spaceId });
+          if (local.status === "available") {
+            const docs = local.docs;
+            if (args.flags.json) {
+              console.log(jsonOutForArgs({ items: docs.map((d) => ({ id: d.id, title: d.title, isDailyNote: d.isDailyNote, tags: d.tags })) }, args.flags));
+              return;
+            }
+            console.log(
+              table(
+                docs.map((d) => ({
+                  id: d.id,
+                  title: d.title,
+                }))
+              )
+            );
+            console.error(dim(`\n${docs.length} documents (local)`));
+            return;
+          } else if (!shouldFallbackToApi(source)) {
+            throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
+          }
         }
-      } else if (!shouldFallbackToApi(source)) {
+      } else if (source === "local") {
         throw new Error("this docs ls query is not supported by --source local; use --source auto or --source api");
       }
 
@@ -107,28 +126,35 @@ export async function runDocs(argv: string[]) {
         && !args.flags.location && !args.flags.ids && !args.flags.include;
 
       if (localEligible) {
-        const local = await searchLocalDocsSafe(pattern, { entityType: "document" });
-        if (local.status === "available") {
-          const results = local.results;
-          if (args.flags.json) {
-            console.log(jsonOutForArgs({
-              items: results.map((r) => ({
-                documentId: r.id,
-                markdown: r.content,
-                blockIds: [r.id],
-              })),
-            }, args.flags));
+        const spaceId = await getLocalSpaceId();
+        if (!spaceId) {
+          if (!shouldFallbackToApi(source)) {
+            throw new Error("active profile has no space ID for local reads; rerun craft setup or use --source api");
+          }
+        } else {
+          const local = await searchLocalDocsSafe(pattern, { entityType: "document", spaceId });
+          if (local.status === "available") {
+            const results = local.results;
+            if (args.flags.json) {
+              console.log(jsonOutForArgs({
+                items: results.map((r) => ({
+                  documentId: r.id,
+                  markdown: r.content,
+                  blockIds: [r.id],
+                })),
+              }, args.flags));
+              return;
+            }
+            for (const hit of results) {
+              console.log(`${dim(hit.id)}  ${truncate(hit.content, 140)}`);
+            }
+            console.error(dim(`\n${results.length} matches (local)`));
             return;
+          } else if (!shouldFallbackToApi(source)) {
+            throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
           }
-          for (const hit of results) {
-            console.log(`${dim(hit.id)}  ${truncate(hit.content, 140)}`);
-          }
-          console.error(dim(`\n${results.length} matches (local)`));
-          return;
-        } else if (!shouldFallbackToApi(source)) {
-          throw new Error(`local Craft store unavailable (${local.status}); use --source auto or --source api`);
         }
-      } else if (!shouldFallbackToApi(source)) {
+      } else if (source === "local") {
         throw new Error("this docs search query is not supported by --source local; use --source auto or --source api");
       }
 

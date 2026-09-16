@@ -105,6 +105,7 @@ export interface Resolved {
   key: string;
   profileName: string;
   spaceName?: string;
+  spaceId?: string;
   authSource: "env" | "config";
 }
 
@@ -133,5 +134,12 @@ export async function resolveProfile(explicit?: string): Promise<Resolved> {
   if (!profile) {
     throw new Error(`profile "${name}" not found. available: ${Object.keys(cfg.profiles).join(", ")}`);
   }
-  return { url: profile.url, key: profile.key, profileName: name, spaceName: profile.spaceName, authSource: "config" };
+  return {
+    url: profile.url,
+    key: profile.key,
+    profileName: name,
+    spaceName: profile.spaceName,
+    spaceId: profile.spaceId,
+    authSource: "config",
+  };
 }
