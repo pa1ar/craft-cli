@@ -8,6 +8,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-19
+
 - Load CLI commands on demand, batch local `cat` reads in one helper, and avoid whole-document allocation for budget-only output.
 
 ### Added
@@ -103,7 +105,8 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/pa1ar/craft-cli/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/pa1ar/craft-cli/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/pa1ar/craft-cli/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/pa1ar/craft-cli/compare/v0.5.1...v0.6.0
