@@ -2,10 +2,12 @@ import { parseWithGlobals } from "../client-factory.ts";
 import { err, jsonOutForArgs, table } from "../format.ts";
 
 const CAPABILITIES = [
+  { keys: ["skill library", "remote skill", "catalog", "skill export"], command: "craft lib list --collection <ID> --json", why: "discover published remote skills without body previews; fetch a match with lib get" },
   { keys: ["health", "doctor", "auth", "debug"], command: "craft doctor --json", why: "verify auth, API, source, local store" },
   { keys: ["source", "mode", "local", "api", "linux"], command: "craft source [auto|api|local]", why: "control local-first vs API reads" },
   { keys: ["search", "find", "grep"], command: "craft docs search <pattern>", why: "vault-wide document search" },
-  { keys: ["read", "get", "document", "doc"], command: "craft docs get <id>", why: "fetch document content" },
+  { keys: ["read", "get", "document", "doc"], command: "craft read <id>", why: "read local-first Markdown with API fallback" },
+  { keys: ["outline", "heading", "range", "lines", "budget"], command: "craft read <id> --outline", why: "find heading line numbers, then read --lines A:B; cap output with --budget N" },
   { keys: ["daily", "today", "journal"], command: "craft docs daily [date]", why: "fetch daily note" },
   { keys: ["append", "write", "markdown"], command: "craft blocks append <docId|--date DATE> --markdown STR", why: "append markdown content" },
   { keys: ["edit", "replace", "patch"], command: "craft patch <docId> --old STR --new STR", why: "surgical block edit" },

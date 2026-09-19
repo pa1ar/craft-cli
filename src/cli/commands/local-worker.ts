@@ -2,7 +2,7 @@
 // stdout is JSON for the parent process; stderr is intentionally ignored.
 import { discoverLocalStore } from "../../lib/local-db.ts";
 
-type HelperOp = "probe" | "listDocs" | "search";
+type HelperOp = "probe" | "listDocs" | "search" | "readDoc" | "readDocs";
 
 export async function runLocalWorker(argv: string[]): Promise<void> {
   const op = argv[0] as HelperOp | undefined;
@@ -44,6 +44,50 @@ export async function runLocalWorker(argv: string[]): Promise<void> {
             limit: numberValue(payload.limit),
           });
           writeOk({ available: true, results });
+        } finally {
+          store.close();
+        }
+        return;
+      }
+      case "readDoc": {
+        const store = discoverLocalStore(stringValue(payload.spaceId));
+        if (!store) {
+          writeOk({ available: false, doc: null });
+          return;
+        }
+        try {
+          const id = stringValue(payload.id);
+          const dailyTitle = stringValue(payload.dailyTitle);
+          let doc = null;
+          if (id) {
+            doc = store.getDocMarkdown(id);
+          } else if (dailyTitle) {
+            const found = store.findDailyDocByTitle(dailyTitle);
+            if (found) doc = store.getDocMarkdown(found.id);
+          }
+          writeOk({ available: true, doc });
+        } finally {
+          store.close();
+        }
+        return;
+      }
+      case "readDocs": {
+        const store = discoverLocalStore(stringValue(payload.spaceId));
+        if (!store) {
+          writeOk({ available: false, docs: {} });
+          return;
+        }
+        try {
+          const ids = Array.isArray(payload.ids) && payload.ids.every(
+            (id): id is string => typeof id === "string" && id.length > 0,
+          )
+            ? payload.ids
+            : null;
+          const docs: Record<string, ReturnType<typeof store.getDocMarkdown>> = {};
+          if (ids !== null) {
+            for (const id of [...new Set(ids)]) docs[id] = store.getDocMarkdown(id);
+          }
+          writeOk({ available: true, docs });
         } finally {
           store.close();
         }

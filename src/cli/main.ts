@@ -2,31 +2,6 @@
 // craft — entry point, subcommand dispatcher.
 import { CraftError } from "../lib/errors.ts";
 import { err } from "./format.ts";
-import { runSetup } from "./commands/setup.ts";
-import { runWhoami } from "./commands/whoami.ts";
-import { runProfiles } from "./commands/profiles.ts";
-import { runFolders } from "./commands/folders.ts";
-import { runDocs } from "./commands/docs.ts";
-import { runBlocks } from "./commands/blocks.ts";
-import { runTasks } from "./commands/tasks.ts";
-import { runCollections } from "./commands/collections.ts";
-import { runUpload } from "./commands/upload.ts";
-import { runComment } from "./commands/comment.ts";
-import { runWhiteboards } from "./commands/whiteboards.ts";
-import { runRaw } from "./commands/raw.ts";
-import { runLinks } from "./commands/links.ts";
-import { runCat } from "./commands/cat.ts";
-import { runLog } from "./commands/log.ts";
-import { runDiff } from "./commands/diff.ts";
-import { runPatch } from "./commands/patch.ts";
-import { runUndo } from "./commands/undo.ts";
-import { runMode, runSource } from "./commands/mode.ts";
-import { runLocalWorker } from "./commands/local-worker.ts";
-import { runDoctor } from "./commands/doctor.ts";
-import { runAgentContext } from "./commands/agent-context.ts";
-import { runWhich } from "./commands/which.ts";
-import { runSkills } from "./commands/skills.ts";
-import { runMedia } from "./commands/media.ts";
 import { closeJournal } from "./journal-singleton.ts";
 import { loadConfig, resolveSource } from "./config.ts";
 import { setSourceOverride } from "./local.ts";
@@ -34,7 +9,8 @@ import { setSourceOverride } from "./local.ts";
 const HELP = `craft — Craft Docs CLI
 Repo: https://github.com/pa1ar/craft-cli
 
-AI agents: use the user's canonical craft-cli skill when configured. Otherwise register skill/SKILL.md with your agent harness before non-trivial use.
+AI agents: use the user's canonical craft-cli skill when configured. Otherwise register the bundled skill/ folder as craft-cli in your harness's supported skill location (keep its references/ folder).
+Remote Agent Skills: craft lib --help explains connection setup, collection schema and export.
 
 Usage: craft <command> [args]
 
@@ -56,19 +32,29 @@ Read routing (important)
   Keep source=auto on macOS. Do not pass --api for ordinary reads.
   auto uses the local Craft cache for unfiltered docs ls and simple docs search,
   then falls back to REST when unavailable or when filters require the API.
-  docs get/daily, blocks, tasks, collections, links, and every write use REST.
+  Markdown read/get/daily/cat also use local cache first. Structured/raw reads,
+  tasks, collections, links, and every write use REST.
   media local reads Craft's on-device asset cache. Local files are read-only.
 
 Read
+  read <id> [--lines A:B | --head N | --outline] [--budget N]
+                                               read Markdown; alias for docs get
   folders ls [--tree] [--json]                  list folders
-  docs ls [--location L] [--folder ID] [--json] list documents (simple query: local-first)
-  docs search <pattern> [--include] [--folder] [--fetch-blocks] [--json] (simple query: local-first)
-  docs get <id> [--json] [--depth N] [--metadata] [--raw] [--no-links] [--exhaustive] (API)
-  docs daily [DATE] [--json] [--raw] [--no-links]   fetch daily note
+  docs ls [--location L] [--folder ID] [--json] list documents
+  docs search <pattern> [--include] [--folder] [--fetch-blocks] [--json]
+  docs get <id> [--json] [--depth N] [--metadata] [--raw] [--links] [--exhaustive]
+  docs daily [DATE] [--json] [--raw] [--links]       fetch daily note
   cat <id> [id...]                                   read multiple docs, concat output
+  # read shaping also works on docs get/daily, blocks get, and cat.
+  # --lines is 1-based/inclusive; --budget counts Unicode characters (min 11)
+  # across all cat output, including separators. Truncation ends with [truncated].
   diff <docId>                                       compare to last known state
-  blocks get <id> [--json] [--depth N] [--no-links]
-  # backlinks are appended by default — pass --no-links to skip the extra search call
+  blocks get <id> [--json] [--depth N] [--links]
+  # markdown reads are local-first: the Craft Desktop cache serves them when
+  # present; missing cache content falls back to API.
+  # "(local)" or "(api)" is printed to stderr. --depth, --metadata, --raw and
+  # --json use the API. Strict --source local rejects unsupported content reads.
+  # backlinks need the API, so they are opt-in via --links.
   blocks search <docId> <pattern> [--before N] [--after N] [--fetch]
   tasks [ls [all|inbox|active|upcoming|logbook|document]] [filters] [--json]
     filters: --state S --doc ID --document TEXT --date D --scheduled D --deadline D
@@ -96,10 +82,15 @@ Write
 Collections
   col ls [--doc ID]
   col schema <id> [--format schema|json-schema-items]
-  col items <id>
+  col items <id> [--status S] [--forai yes|no] [--byai yes|no] [--assignee TAG]
+             [--prop k=v] [--text Q] [--limit N] [--flat] [--preview] [--json [--select F]]
   col items add <id> --file F
   col items update <id> --file F
   col items rm <id> <itemId>...
+  # list defaults to a clean table (no content previews). --json drops previews
+  # unless --preview. --flat lifts properties.* to top level for easy --select.
+  # --forai/--byai filter assignee multiSelect (forAI/byAI); --assignee matches one tag.
+  # filters are client-side (API returns all items; local collection cache TBD).
   col views <id>
   col views create <id> --file F
   col views update <id> <viewId> --file F
@@ -122,6 +113,7 @@ Misc
   wb el {ls|add|update|rm} <wbId> [...]
   raw <METHOD> <path> [--query k=v] [--body FILE|-] [--header k:v]
   skills {ls|search|show|validate|run} [...]         demand-loaded automation skills
+  lib {list|get|export} --collection ID [...]      remote skill catalog and SKILL.md retrieval
   media local <blockId> [--all]                         resolve on-device media paths
   media analyze <blockId> [--estimate] [--max-cost EUR] analyze media, preferring on-device files
   media replace <blockId> <file> [--content-type TYPE]  upload, verify, then replace media block
@@ -154,6 +146,7 @@ async function main() {
   const rest = argv.slice(1);
 
   if (cmd === "__local") {
+    const { runLocalWorker } = await import("./commands/local-worker.ts");
     await runLocalWorker(rest);
     return;
   }
@@ -172,81 +165,87 @@ async function main() {
   try {
     switch (cmd) {
       case "setup":
-        await runSetup(rest);
+        await (await import("./commands/setup.ts")).runSetup(rest);
         break;
       case "doctor":
-        await runDoctor(rest);
+        await (await import("./commands/doctor.ts")).runDoctor(rest);
         break;
       case "agent-context":
-        await runAgentContext(rest);
+        await (await import("./commands/agent-context.ts")).runAgentContext(rest);
         break;
       case "which":
-        await runWhich(rest);
+        await (await import("./commands/which.ts")).runWhich(rest);
         break;
       case "skills":
-        await runSkills(rest);
+        await (await import("./commands/skills.ts")).runSkills(rest);
+        break;
+      case "lib":
+        await (await import("./commands/lib.ts")).runLib(rest);
         break;
       case "media":
-        await runMedia(rest);
+        await (await import("./commands/media.ts")).runMedia(rest);
         break;
       case "whoami":
-        await runWhoami(rest);
+        await (await import("./commands/whoami.ts")).runWhoami(rest);
         break;
       case "profiles":
-        await runProfiles(rest);
+        await (await import("./commands/profiles.ts")).runProfiles(rest);
         break;
       case "folders":
-        await runFolders(rest);
+        await (await import("./commands/folders.ts")).runFolders(rest);
         break;
       case "docs":
-        await runDocs(rest);
+        await (await import("./commands/docs.ts")).runDocs(rest);
+        break;
+      case "read":
+        await (await import("./commands/docs.ts")).runDocs(["get", ...rest]);
         break;
       case "blocks":
-        await runBlocks(rest);
+        await (await import("./commands/blocks.ts")).runBlocks(rest);
         break;
       case "tasks":
-        await runTasks(rest);
+        await (await import("./commands/tasks.ts")).runTasks(rest);
         break;
       case "col":
       case "collections":
-        await runCollections(rest);
+        await (await import("./commands/collections.ts")).runCollections(rest);
         break;
       case "upload":
-        await runUpload(rest);
+        await (await import("./commands/upload.ts")).runUpload(rest);
         break;
       case "comment":
-        await runComment(rest);
+        await (await import("./commands/comment.ts")).runComment(rest);
         break;
       case "wb":
       case "whiteboards":
-        await runWhiteboards(rest);
+        await (await import("./commands/whiteboards.ts")).runWhiteboards(rest);
         break;
       case "raw":
-        await runRaw(rest);
+        await (await import("./commands/raw.ts")).runRaw(rest);
         break;
       case "links":
-        await runLinks(rest);
+        await (await import("./commands/links.ts")).runLinks(rest);
         break;
       case "cat":
-        await runCat(rest);
+        await (await import("./commands/cat.ts")).runCat(rest);
         break;
       case "log":
-        await runLog(rest);
+        await (await import("./commands/log.ts")).runLog(rest);
         break;
       case "diff":
-        await runDiff(rest);
+        await (await import("./commands/diff.ts")).runDiff(rest);
         break;
       case "patch":
-        await runPatch(rest);
+        await (await import("./commands/patch.ts")).runPatch(rest);
         break;
       case "undo":
-        await runUndo(rest);
+        await (await import("./commands/undo.ts")).runUndo(rest);
         break;
       case "mode":
-        await runMode(rest);
+        await (await import("./commands/mode.ts")).runMode(rest);
         break;
       case "source":
-        await runSource(rest);
+        await (await import("./commands/mode.ts")).runSource(rest);
         break;
       default:
         console.error(err(`unknown command: ${cmd}`));

@@ -8,6 +8,7 @@ import {
 import { listLocalDocsSafe, searchLocalDocsSafe } from "../local-safe.ts";
 import { shouldFallbackToApi, shouldTryLocal, sourceFromArgs } from "../source.ts";
 import { resolveProfile } from "../config.ts";
+import { readShapeOptions, shapeMarkdown, applyCharacterBudget } from "../read-shaping.ts";
 import { $ } from "bun";
 
 export async function runDocs(argv: string[]) {
@@ -22,6 +23,7 @@ export async function runDocs(argv: string[]) {
       depth: { type: "number" },
       raw: { type: "boolean" },
       "no-links": { type: "boolean" },
+      links: { type: "boolean" },
       exhaustive: { type: "boolean" },
       include: { type: "boolean" }, // use `include` mode instead of default `regexps`
       ids: { type: "string" },
@@ -29,9 +31,22 @@ export async function runDocs(argv: string[]) {
       "created-since": { type: "string" },
       to: { type: "string" },
       title: { type: "string" },
+      lines: { type: "string" },
+      head: { type: "number" },
+      outline: { type: "boolean" },
+      budget: { type: "number" },
     },
   });
   const source = sourceFromArgs(args);
+
+  const shapingRequested = args.flags.lines !== undefined || args.flags.head !== undefined
+    || args.flags.outline === true || args.flags.budget !== undefined;
+  if (shapingRequested && sub !== "get" && sub !== "daily") {
+    throw new Error("read shaping flags are supported only by `craft docs get` and `craft docs daily`");
+  }
+  const readShape = sub === "get" || sub === "daily"
+    ? readShapeOptions(args.flags, args.flags.json ? "json" : "markdown")
+    : undefined;
 
   let _localSpaceId: string | undefined;
   let _localSpaceIdResolved = false;
@@ -182,21 +197,32 @@ export async function runDocs(argv: string[]) {
       const id = args.positional[0];
       if (!id) throw new Error("usage: craft docs get <id>");
       const client = await getClient();
-      const { payload, backlinks } = await getAndRender(client, {
+      const { payload, backlinks, servedBy } = await getAndRender(client, {
         id,
-        depth: args.flags.depth ?? -1,
+        depth: args.flags.depth,
         metadata: args.flags.metadata,
         format: args.flags.json ? "json" : "markdown",
         raw: args.flags.raw,
-        withLinks: !args.flags["no-links"],
+        withLinks: !!args.flags.links,
         exhaustive: args.flags.exhaustive,
+        source,
+        spaceId: await getLocalSpaceId(),
       });
       if (args.flags.json) {
         console.log(jsonOutForArgs(attachBacklinksJson(payload as any, backlinks), args.flags));
       } else {
-        process.stdout.write(payload as string);
-        if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
-        else process.stdout.write("\n");
+        let md = payload as string;
+        if (readShape) {
+          md = shapeMarkdown(md, { ...readShape, budget: undefined });
+          let rendered = md.endsWith("\n") ? md : `${md}\n`;
+          if (backlinks !== null) rendered += renderBacklinksMarkdown(backlinks);
+          if (readShape.budget !== undefined) rendered = applyCharacterBudget(rendered, readShape.budget);
+          process.stdout.write(rendered);
+        } else {
+          process.stdout.write(md.endsWith("\n") ? md : `${md}\n`);
+          if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
+        }
+        if (!args.flags.quiet) console.error(dim(`(${servedBy})`));
       }
       return;
     }
@@ -204,20 +230,32 @@ export async function runDocs(argv: string[]) {
     case "daily": {
       const date = args.positional[0] ?? "today";
       const client = await getClient();
-      const { payload, backlinks } = await getAndRender(client, {
+      const { payload, backlinks, servedBy } = await getAndRender(client, {
         date,
-        depth: args.flags.depth ?? -1,
+        depth: args.flags.depth,
+        metadata: args.flags.metadata,
         format: args.flags.json ? "json" : "markdown",
         raw: args.flags.raw,
-        withLinks: !args.flags["no-links"],
+        withLinks: !!args.flags.links,
         exhaustive: args.flags.exhaustive,
+        source,
+        spaceId: await getLocalSpaceId(),
       });
       if (args.flags.json) {
         console.log(jsonOutForArgs(attachBacklinksJson(payload as any, backlinks), args.flags));
       } else {
-        process.stdout.write(payload as string);
-        if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
-        else process.stdout.write("\n");
+        let md = payload as string;
+        if (readShape) {
+          md = shapeMarkdown(md, { ...readShape, budget: undefined });
+          let rendered = md.endsWith("\n") ? md : `${md}\n`;
+          if (backlinks !== null) rendered += renderBacklinksMarkdown(backlinks);
+          if (readShape.budget !== undefined) rendered = applyCharacterBudget(rendered, readShape.budget);
+          process.stdout.write(rendered);
+        } else {
+          process.stdout.write(md.endsWith("\n") ? md : `${md}\n`);
+          if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
+        }
+        if (!args.flags.quiet) console.error(dim(`(${servedBy})`));
       }
       return;
     }

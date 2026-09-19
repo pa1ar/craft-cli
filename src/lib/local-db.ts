@@ -42,12 +42,53 @@ export interface PTSDocument {
   stamp: string;
 }
 
+/** A document rendered for reading, sourced entirely from the local store. */
+export interface LocalDocMarkdown {
+  id: string; // API entity id (BlockSearch.id)
+  documentId: string; // internal PlainTextSearch id
+  title: string;
+  markdown: string;
+  contentHash: string;
+  modified: number;
+  blockCount: number;
+  isDailyNote: boolean;
+}
+
 // --- nsdate conversion ---
 
 const NSDATE_EPOCH = 978307200; // 2001-01-01 00:00:00 UTC
 
 function nsdateToUnix(nsdate: number): number {
   return Math.floor(nsdate + NSDATE_EPOCH);
+}
+
+// --- markdown normalization ---
+
+/** PlainTextSearch renders the page block itself as an empty heading
+ * (`# `, `#### `, ...) because the real title lives in a sibling field.
+ * Replace it with the real title and clean transport artifacts. */
+export function normalizePtsMarkdown(title: string, markdownContent: string): string {
+  // PTS uses the page block itself as an empty heading. Remove that verified
+  // transport wrapper (and its separator line), then preserve the document
+  // body exactly. Trailing spaces can be Markdown hard-breaks and blank lines
+  // are meaningful inside fenced code blocks.
+  let md = markdownContent ?? "";
+  md = md.replace(/\r\n/g, "\n");
+  md = md.replace(/^#{1,6}[ \t]*\n(?:\n)?/, "");
+
+  const heading = title.trim();
+  if (!heading) return md;
+  if (!md) return `# ${heading}\n`;
+  const body = md.endsWith("\n") ? md : `${md}\n`;
+  return `# ${heading}\n\n${body}`;
+}
+
+/** Daily notes are titled `YYYY.MM.DD` in Craft. */
+export function dailyTitleForDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}.${m}.${d}`;
 }
 
 // --- local store ---
@@ -80,17 +121,24 @@ export class LocalStore {
   ): LocalSearchResult[] {
     const limit = opts?.limit ?? 100;
     try {
+      // Filter entityType in SQL. Filtering after a LIMIT drops every document
+      // hit for common terms, because block rows fill the page first.
+      const entityClause = opts?.entityType ? " AND entityType = ?" : "";
+      const params = opts?.entityType ? [query, opts.entityType] : [query];
       const rows = this.db
-        .query<any, [string]>(
+        .query<any, string[]>(
           `SELECT id, content, type, entityType, documentId, isTodo, isTodoChecked
-           FROM BlockSearch WHERE BlockSearch MATCH ?
-           LIMIT ${limit + 50}`,
+           FROM BlockSearch
+           WHERE BlockSearch MATCH ?${entityClause}
+           ORDER BY rank
+           LIMIT ${limit}`,
         )
-        .all(query);
+        .all(...params);
 
       let results: LocalSearchResult[] = rows.map(rowToSearchResult);
 
-      // post-filter by entityType (fts column filters can be unreliable)
+      // belt and braces: the SQL predicate is authoritative, this guards
+      // against a future schema change that stores entityType loosely
       if (opts?.entityType) {
         results = results.filter((r) => r.entityType === opts.entityType);
       }
@@ -158,6 +206,69 @@ export class LocalStore {
     };
   }
 
+  /** Resolve an API entity id to its internal document id and title.
+   * The BlockSearch document row keeps the title as typed; PTS `title` is a
+   * normalized search form and can differ in case. */
+  resolveDocRow(entityId: string): { documentId: string; title: string } | null {
+    try {
+      const row = this.db
+        .query<{ documentId: string; content: string }, [string]>(
+          `SELECT documentId, content FROM BlockSearch
+           WHERE id = ? AND entityType = 'document'`,
+        )
+        .get(entityId);
+      if (!row) return null;
+      return { documentId: row.documentId, title: row.content ?? "" };
+    } catch (err) {
+      console.warn(`[local-db] resolveDocRow error: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  /** Full document read from the local store. Returns null when the document
+   * is not mirrored locally, so callers can fall back to the API. */
+  getDocMarkdown(entityId: string): LocalDocMarkdown | null {
+    const row = this.resolveDocRow(entityId);
+    if (!row) return null;
+    const pts = this.getDocContentByInternalId(row.documentId);
+    if (!pts) return null;
+    const title = row.title || pts.title || "";
+    return {
+      id: entityId,
+      documentId: row.documentId,
+      title,
+      markdown: normalizePtsMarkdown(title, pts.markdownContent),
+      contentHash: pts.contentHash,
+      modified: pts.modified,
+      blockCount: pts.blockCount,
+      isDailyNote: pts.isDailyNote,
+    };
+  }
+
+  /** Find a daily note by its `YYYY.MM.DD` title. */
+  findDailyDocByTitle(title: string): { id: string; documentId: string; title: string } | null {
+    try {
+      const rows = this.db
+        .query<{ id: string; documentId: string; content: string }, [string]>(
+          `SELECT id, documentId, content FROM BlockSearch
+           WHERE entityType = 'document' AND content = ?`,
+        )
+        .all(title);
+      for (const row of rows) {
+        // A title collision can be an ordinary document named like a date.
+        // When PTS metadata is present, require Craft's daily-note marker;
+        // older/partial caches without PTS remain readable for compatibility.
+        const pts = this.readPts(row.documentId);
+        if (pts && pts.isDailyNote !== true) continue;
+        return { id: row.id, documentId: row.documentId, title: row.content ?? title };
+      }
+      return null;
+    } catch (err) {
+      console.warn(`[local-db] findDailyDocByTitle error: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   findBlockByContent(entityId: string, text: string): LocalSearchResult[] {
     const docId = this.resolveId(entityId);
     if (!docId) return [];
@@ -212,13 +323,22 @@ export class LocalStore {
 
   private readPts(documentId: string): any | null {
     if (!this.ptsDir) return null;
-    const path = join(this.ptsDir, `document_${documentId}.json`);
-    try {
-      const raw = readFileSync(path, "utf-8");
-      return JSON.parse(raw);
-    } catch {
-      return null;
+    // Craft Desktop normally uses `document_<id>.json`. A few cache exports
+    // (and older Desktop builds) retain the internal id as the filename, so
+    // accept that form as a read-only compatibility fallback.
+    const paths = [
+      join(this.ptsDir, `document_${documentId}.json`),
+      join(this.ptsDir, documentId),
+    ];
+    for (const path of paths) {
+      try {
+        const raw = readFileSync(path, "utf-8");
+        return JSON.parse(raw);
+      } catch {
+        // try the next filename variant
+      }
     }
+    return null;
   }
 }
 

@@ -1,5 +1,7 @@
 export { CraftClient, parallel, walkBlocks, findBlocks } from "./client.ts";
 export { CraftError } from "./errors.ts";
+export { listLibrary, getLibrarySkill } from "./skill-library.ts";
+export type { LibraryEntry, LibraryOptions, LibraryListResult, LibrarySkillResult, LibraryRejected } from "./skill-library.ts";
 export type * from "./types.ts";
 export type { GetBlockOptions, BlockInsert, BlockUpdate, SearchInDocOpts } from "./blocks.ts";
 export { normalizeCraftMediaBlocks } from "./blocks.ts";
@@ -14,6 +16,15 @@ export type {
   NewCollectionItem,
   UpdateCollectionItem,
 } from "./collections.ts";
+export {
+  filterCollectionItems,
+  filtersFromFlags,
+  flattenItemProps,
+  itemsForAgentOutput,
+  itemsToTableRows,
+  stripItemNoise,
+} from "./collection-items.ts";
+export type { CollectionItemFilters, CollectionItemLike } from "./collection-items.ts";
 export type { NewTask, TaskUpdate } from "./tasks.ts";
 export type { UploadTarget, UploadResult } from "./upload.ts";
 export type { WhiteboardElement } from "./whiteboards.ts";

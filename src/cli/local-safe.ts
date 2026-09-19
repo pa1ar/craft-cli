@@ -1,6 +1,6 @@
 // bounded local Craft store operations. local fs/sqlite probes can hang in
 // kernel calls, so run them in a helper process the parent can kill.
-import type { LocalDoc, LocalSearchResult } from "../lib/local-db.ts";
+import type { LocalDoc, LocalDocMarkdown, LocalSearchResult } from "../lib/local-db.ts";
 
 export type LocalProbeStatus = "available" | "unavailable" | "timeout" | "error";
 
@@ -21,7 +21,19 @@ export interface LocalSearchOutcome {
   results: LocalSearchResult[];
 }
 
-type HelperOp = "probe" | "listDocs" | "search";
+export interface LocalDocReadOutcome {
+  status: LocalProbeStatus;
+  timeoutMs: number;
+  doc: LocalDocMarkdown | null;
+}
+
+export interface LocalDocBatchReadOutcome {
+  status: LocalProbeStatus;
+  timeoutMs: number;
+  docs: Record<string, LocalDocMarkdown | null>;
+}
+
+type HelperOp = "probe" | "listDocs" | "search" | "readDoc" | "readDocs";
 
 interface ProcessResult {
   timedOut: boolean;
@@ -100,6 +112,58 @@ export async function searchLocalDocsSafe(
     status: result.value.available ? "available" : "unavailable",
     timeoutMs,
     results: result.value.results,
+  };
+}
+
+/** Read one document as markdown from the local store.
+ * Pass `id` (API entity id) or `dailyTitle` (`YYYY.MM.DD`). */
+export async function readLocalDocSafe(
+  target: { id?: string; dailyTitle?: string },
+  opts?: { spaceId?: string; timeoutMs?: number },
+): Promise<LocalDocReadOutcome> {
+  const timeoutMs = opts?.timeoutMs ?? localTimeoutMs();
+  const result = await runLocalHelper<{
+    available: boolean;
+    doc: LocalDocMarkdown | null;
+  }>(
+    "readDoc",
+    {
+      id: target.id,
+      dailyTitle: target.dailyTitle,
+      spaceId: opts?.spaceId,
+    },
+    timeoutMs,
+  );
+  if (result.timedOut) return { status: "timeout", timeoutMs, doc: null };
+  if (!result.ok) return { status: "error", timeoutMs, doc: null };
+  return {
+    status: result.value.available ? "available" : "unavailable",
+    timeoutMs,
+    doc: result.value.doc ?? null,
+  };
+}
+
+/** Read several documents through one bounded helper/store lifetime. */
+export async function readLocalDocsSafe(
+  ids: string[],
+  opts?: { spaceId?: string; timeoutMs?: number },
+): Promise<LocalDocBatchReadOutcome> {
+  const timeoutMs = opts?.timeoutMs ?? localTimeoutMs();
+  const uniqueIds = [...new Set(ids)];
+  const result = await runLocalHelper<{
+    available: boolean;
+    docs: Record<string, LocalDocMarkdown | null>;
+  }>(
+    "readDocs",
+    { ids: uniqueIds, spaceId: opts?.spaceId },
+    timeoutMs,
+  );
+  if (result.timedOut) return { status: "timeout", timeoutMs, docs: {} };
+  if (!result.ok) return { status: "error", timeoutMs, docs: {} };
+  return {
+    status: result.value.available ? "available" : "unavailable",
+    timeoutMs,
+    docs: result.value.docs ?? {},
   };
 }
 

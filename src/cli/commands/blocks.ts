@@ -2,8 +2,11 @@ import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { parseArgs, readStdin } from "../args.ts";
 import { err, dim, jsonOutForArgs } from "../format.ts";
 import { getAndRender, renderBacklinksMarkdown, attachBacklinksJson } from "../render.ts";
+import { sourceFromArgs } from "../source.ts";
+import { resolveProfile } from "../config.ts";
 import { getJournal } from "../journal-singleton.ts";
 import type { Position } from "../../lib/types.ts";
+import { readShapeOptions, shapeMarkdown, applyCharacterBudget } from "../read-shaping.ts";
 
 export async function runBlocks(argv: string[]) {
   const sub = argv[0];
@@ -14,6 +17,7 @@ export async function runBlocks(argv: string[]) {
       metadata: { type: "boolean" },
       raw: { type: "boolean" },
       "no-links": { type: "boolean" },
+      links: { type: "boolean" },
       exhaustive: { type: "boolean" },
       markdown: { type: "string" },
       file: { type: "string" },
@@ -27,30 +31,55 @@ export async function runBlocks(argv: string[]) {
       case: { type: "boolean" },
       fetch: { type: "boolean" },
       to: { type: "string" },
+      lines: { type: "string" },
+      head: { type: "number" },
+      outline: { type: "boolean" },
+      budget: { type: "number" },
     },
   });
 
+  const shapingRequested = args.flags.lines !== undefined || args.flags.head !== undefined
+    || args.flags.outline === true || args.flags.budget !== undefined;
+  if (shapingRequested && sub !== "get") {
+    throw new Error("read shaping flags are supported only by `craft blocks get`");
+  }
+  const readShape = sub === "get" ? readShapeOptions(args.flags, args.flags.json ? "json" : "markdown") : undefined;
+
   const { client } = await buildClient(args);
+  const source = sourceFromArgs(args);
 
   switch (sub) {
     case "get": {
       const id = args.positional[0];
       if (!id) throw new Error("usage: craft blocks get <id>");
-      const { payload, backlinks } = await getAndRender(client, {
+      const explicitProfile = typeof args.flags.profile === "string" ? args.flags.profile : undefined;
+      const spaceId = (await resolveProfile(explicitProfile)).spaceId;
+      const { payload, backlinks, servedBy } = await getAndRender(client, {
         id,
-        depth: args.flags.depth ?? -1,
+        depth: args.flags.depth,
         metadata: args.flags.metadata,
         format: args.flags.json ? "json" : "markdown",
         raw: args.flags.raw,
-        withLinks: !args.flags["no-links"],
+        withLinks: !!args.flags.links,
         exhaustive: args.flags.exhaustive,
+        source,
+        spaceId,
       });
       if (args.flags.json) {
         console.log(jsonOutForArgs(attachBacklinksJson(payload as any, backlinks), args.flags));
       } else {
-        process.stdout.write(payload as string);
-        if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
-        else process.stdout.write("\n");
+        let md = payload as string;
+        if (readShape) {
+          md = shapeMarkdown(md, { ...readShape, budget: undefined });
+          let rendered = md.endsWith("\n") ? md : `${md}\n`;
+          if (backlinks !== null) rendered += renderBacklinksMarkdown(backlinks);
+          if (readShape.budget !== undefined) rendered = applyCharacterBudget(rendered, readShape.budget);
+          process.stdout.write(rendered);
+        } else {
+          process.stdout.write(md.endsWith("\n") ? md : `${md}\n`);
+          if (backlinks !== null) process.stdout.write(renderBacklinksMarkdown(backlinks));
+        }
+        if (!args.flags.quiet) console.error(dim(`(${servedBy})`));
       }
       return;
     }

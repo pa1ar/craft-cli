@@ -1,0 +1,2199 @@
+{
+  "measuredAt": "2026-09-19T17:34:34.569Z",
+  "platform": "darwin arm64 27.0.0",
+  "beforeBinarySha256": "b24459a76c91a8d2b13453f4003188b38cb78cc7111f83f76d2a46209f88333e",
+  "currentBinarySha256": "b4cd6c5a4cbf2be36724358257b7e293c447e00388aacdf11ff210c59fcbdbeb",
+  "methodology": "Warm filesystem; fresh process per sample; one excluded warm-up; 5 network/auto or 15 local samples; full stdout drained; no UI/LLM time. Identical current-local bytes written to temporary .md fixtures. Explicit local cases use an isolated clean freshness DB; auto cases use real pending-write state.",
+  "documents": [
+    {
+      "label": "document-1",
+      "bytes": 15448,
+      "characters": 15439,
+      "lines": 252
+    },
+    {
+      "label": "document-2",
+      "bytes": 239966,
+      "characters": 239492,
+      "lines": 2747
+    }
+  ],
+  "cases": [
+    {
+      "name": "before-default-with-backlinks",
+      "document": 0,
+      "medianMs": 980.3461670000106,
+      "minMs": 904.4323749999967,
+      "maxMs": 1039.752833000006,
+      "samples": [
+        {
+          "ms": 1011.2429169999996,
+          "source": null,
+          "bytes": 17553,
+          "characters": 17544,
+          "lines": 250
+        },
+        {
+          "ms": 1039.752833000006,
+          "source": null,
+          "bytes": 17553,
+          "characters": 17544,
+          "lines": 250
+        },
+        {
+          "ms": 933.7494999999981,
+          "source": null,
+          "bytes": 17553,
+          "characters": 17544,
+          "lines": 250
+        },
+        {
+          "ms": 904.4323749999967,
+          "source": null,
+          "bytes": 17553,
+          "characters": 17544,
+          "lines": 250
+        },
+        {
+          "ms": 980.3461670000106,
+          "source": null,
+          "bytes": 17553,
+          "characters": 17544,
+          "lines": 250
+        }
+      ]
+    },
+    {
+      "name": "before-api-content-only",
+      "document": 0,
+      "medianMs": 933.9125839999979,
+      "minMs": 743.8500420000055,
+      "maxMs": 1010.9743330000019,
+      "samples": [
+        {
+          "ms": 896.2923750000009,
+          "source": null,
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 1010.9743330000019,
+          "source": null,
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 743.8500420000055,
+          "source": null,
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 933.9125839999979,
+          "source": null,
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 987.5476659999986,
+          "source": null,
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        }
+      ]
+    },
+    {
+      "name": "after-api-content-only",
+      "document": 0,
+      "medianMs": 502.2427910000006,
+      "minMs": 405.3514589999977,
+      "maxMs": 768.1716669999951,
+      "samples": [
+        {
+          "ms": 466.0277920000008,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 502.2427910000006,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 405.3514589999977,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 768.1716669999951,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 656.0625,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        }
+      ]
+    },
+    {
+      "name": "after-auto-current-freshness",
+      "document": 0,
+      "medianMs": 418.61824999999953,
+      "minMs": 409.0032919999976,
+      "maxMs": 453.33916599999793,
+      "samples": [
+        {
+          "ms": 453.33916599999793,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 409.0032919999976,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 416.3523750000022,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 418.61824999999953,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        },
+        {
+          "ms": 449.52750000001106,
+          "source": "api",
+          "bytes": 17526,
+          "characters": 17517,
+          "lines": 244
+        }
+      ]
+    },
+    {
+      "name": "after-local-full",
+      "document": 0,
+      "medianMs": 61.42025000001013,
+      "minMs": 57.5970410000009,
+      "maxMs": 104.71691700000156,
+      "samples": [
+        {
+          "ms": 66.0661250000012,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 104.71691700000156,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 68.80995899999834,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 66.38591599999927,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 71.13375000000087,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 59.80312500000582,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 62.831583999999566,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 60.15779100000509,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 58.28645800000231,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 60.30283299999428,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 57.5970410000009,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 61.977249999996275,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 60.43275000000722,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 57.697082999991835,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 61.42025000001013,
+          "source": "local",
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        }
+      ]
+    },
+    {
+      "name": "after-local-head40",
+      "document": 0,
+      "medianMs": 60.641041000009864,
+      "minMs": 57.48920900000667,
+      "maxMs": 79.01462499999616,
+      "samples": [
+        {
+          "ms": 63.38804199999868,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 62.5067080000008,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 60.77391699999862,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 57.85241700000188,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 57.512125000001106,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 79.01462499999616,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 64.02183300000615,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 64.10983299999498,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 63.91116599999077,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 60.641041000009864,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 58.68416599999182,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 58.82524999999441,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 58.679209000008996,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 57.48920900000667,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 59.21287499999744,
+          "source": "local",
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        }
+      ]
+    },
+    {
+      "name": "after-local-lines20-60",
+      "document": 0,
+      "medianMs": 58.97074999999313,
+      "minMs": 57.857042000003275,
+      "maxMs": 92.02099999999336,
+      "samples": [
+        {
+          "ms": 62.19691600000078,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 66.12858300000153,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 60.26312499999767,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 58.78574999999546,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 57.912875000001804,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 58.9395419999928,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 58.97074999999313,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 92.02099999999336,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 61.565125000008265,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 58.02958299999591,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 58.2733339999977,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 61.192499999990105,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 57.857042000003275,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 58.57070899999235,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        },
+        {
+          "ms": 60.00983299998916,
+          "source": "local",
+          "bytes": 2506,
+          "characters": 2505,
+          "lines": 40
+        }
+      ]
+    },
+    {
+      "name": "after-local-outline",
+      "document": 0,
+      "medianMs": 59.35754199999792,
+      "minMs": 57.723916000002646,
+      "maxMs": 64.11512499999662,
+      "samples": [
+        {
+          "ms": 59.35754199999792,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 60.039041,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 58.99737499999901,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 59.213457999998354,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 58.43208299999969,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 57.723916000002646,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 60.308832999988226,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 58.64291700000467,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 59.070707999999286,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 63.37362500000745,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 59.33849999999802,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 64.11512499999662,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 59.76937499998894,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 61.12187499999709,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        },
+        {
+          "ms": 61.39512499999546,
+          "source": "local",
+          "bytes": 1070,
+          "characters": 1070,
+          "lines": 34
+        }
+      ]
+    },
+    {
+      "name": "after-local-budget2000",
+      "document": 0,
+      "medianMs": 60.76387500000419,
+      "minMs": 58.06529199999932,
+      "maxMs": 109.26637500000652,
+      "samples": [
+        {
+          "ms": 59.604707999998936,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 62.228666999999405,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 59.34937499999796,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 60.76387500000419,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 60.16874999999709,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 59.13970899999549,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 62.44262499999604,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 58.06529199999932,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 109.26637500000652,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 61.52491699998791,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 69.68704200000502,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 58.489750000007916,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 61.729000000006636,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 59.97370800000499,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        },
+        {
+          "ms": 64.028707999998,
+          "source": "local",
+          "bytes": 2000,
+          "characters": 2000,
+          "lines": 26
+        }
+      ]
+    },
+    {
+      "name": "markdown-cat",
+      "document": 0,
+      "medianMs": 2.3592500000013388,
+      "minMs": 2.0405829999945126,
+      "maxMs": 2.796834000000672,
+      "samples": [
+        {
+          "ms": 2.4144169999999576,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.3592500000013388,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.1599160000041593,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.3800000000046566,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.796834000000672,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.337167000005138,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.4235420000040904,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.0405829999945126,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.4744170000049053,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.409417000002577,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.2041250000038417,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.27483399999619,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.33983400001307,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.2936250000057044,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        },
+        {
+          "ms": 2.4168750000098953,
+          "source": null,
+          "bytes": 15448,
+          "characters": 15439,
+          "lines": 252
+        }
+      ]
+    },
+    {
+      "name": "markdown-head40",
+      "document": 0,
+      "medianMs": 1.8561249999911524,
+      "minMs": 1.5763329999899724,
+      "maxMs": 2.115665999997873,
+      "samples": [
+        {
+          "ms": 1.9344590000000608,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.6217499999984284,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.6569579999995767,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.8307500000009895,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.8344159999978729,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 2.1102499999979045,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 2.0121669999934966,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.931125000002794,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.7915000000066357,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.9101249999948777,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 2.115665999997873,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.8561249999911524,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.5763329999899724,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.9094160000095144,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        },
+        {
+          "ms": 1.7110839999950258,
+          "source": null,
+          "bytes": 2807,
+          "characters": 2807,
+          "lines": 40
+        }
+      ]
+    },
+    {
+      "name": "markdown-lines20-60",
+      "document": 0,
+      "medianMs": 2.000499999994645,
+      "minMs": 1.5850829999981215,
+      "maxMs": 2.5190419999998994,
+      "samples": [
+        {
+          "ms": 1.9313330000004498,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.01708299999882,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.286374999996042,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.211709000002884,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 1.5850829999981215,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.0252500000060536,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 1.907666999992216,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 1.8759999999892898,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.3468750000029104,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.000499999994645,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 1.7972089999966556,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.5190419999998994,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 1.6575000000011642,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 2.0284580000006827,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        },
+        {
+          "ms": 1.9733330000017304,
+          "source": null,
+          "bytes": 2507,
+          "characters": 2506,
+          "lines": 41
+        }
+      ]
+    },
+    {
+      "name": "before-default-with-backlinks",
+      "document": 1,
+      "medianMs": 2170.3252090000024,
+      "minMs": 2071.7359579999975,
+      "maxMs": 3193.077042000001,
+      "samples": [
+        {
+          "ms": 3193.077042000001,
+          "source": null,
+          "bytes": 240942,
+          "characters": 240419,
+          "lines": 2705
+        },
+        {
+          "ms": 3107.5050830000037,
+          "source": null,
+          "bytes": 240942,
+          "characters": 240419,
+          "lines": 2705
+        },
+        {
+          "ms": 2071.7359579999975,
+          "source": null,
+          "bytes": 240942,
+          "characters": 240419,
+          "lines": 2705
+        },
+        {
+          "ms": 2170.3252090000024,
+          "source": null,
+          "bytes": 240942,
+          "characters": 240419,
+          "lines": 2705
+        },
+        {
+          "ms": 2101.3243749999965,
+          "source": null,
+          "bytes": 240942,
+          "characters": 240419,
+          "lines": 2705
+        }
+      ]
+    },
+    {
+      "name": "before-api-content-only",
+      "document": 1,
+      "medianMs": 1679.7879169999942,
+      "minMs": 1477.387999999999,
+      "maxMs": 8588.496541000008,
+      "samples": [
+        {
+          "ms": 1723.9952919999996,
+          "source": null,
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 1679.7879169999942,
+          "source": null,
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 1477.387999999999,
+          "source": null,
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 1482.1838329999955,
+          "source": null,
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 8588.496541000008,
+          "source": null,
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        }
+      ]
+    },
+    {
+      "name": "after-api-content-only",
+      "document": 1,
+      "medianMs": 816.0726670000004,
+      "minMs": 668.325208000002,
+      "maxMs": 1245.5151669999905,
+      "samples": [
+        {
+          "ms": 778.8401249999988,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 668.325208000002,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 816.0726670000004,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 1092.8919580000002,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 1245.5151669999905,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        }
+      ]
+    },
+    {
+      "name": "after-auto-current-freshness",
+      "document": 1,
+      "medianMs": 1016.834124999994,
+      "minMs": 873.861957999994,
+      "maxMs": 1211.353750000002,
+      "samples": [
+        {
+          "ms": 1211.353750000002,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 1016.834124999994,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 946.6709580000024,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 873.861957999994,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        },
+        {
+          "ms": 1047.2147910000058,
+          "source": "api",
+          "bytes": 238589,
+          "characters": 238114,
+          "lines": 2676
+        }
+      ]
+    },
+    {
+      "name": "after-local-full",
+      "document": 1,
+      "medianMs": 92.58625000000757,
+      "minMs": 87.58845799999835,
+      "maxMs": 104.44858300000487,
+      "samples": [
+        {
+          "ms": 96.89479199999914,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 96.89199999999983,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 94.1507500000007,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 95.80212500000198,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 104.44858300000487,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 89.67158300000301,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 92.58625000000757,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 92.48266700000386,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 94.03741699999955,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 90.15754200000083,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 90.04537500000151,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 95.03133300000627,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 89.58762500000012,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 87.58845799999835,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 88.69237499999872,
+          "source": "local",
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        }
+      ]
+    },
+    {
+      "name": "after-local-head40",
+      "document": 1,
+      "medianMs": 86.80808299999626,
+      "minMs": 83.58545800000138,
+      "maxMs": 91.67829100000381,
+      "samples": [
+        {
+          "ms": 88.43404200000077,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 91.67829100000381,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 85.27795799999876,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 89.99058299999888,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 89.9785419999971,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 83.58545800000138,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 85.64362499999697,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 86.31145799999649,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 86.80808299999626,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 86.0721659999981,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 89.29929199999606,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 87.950874999995,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 84.32145799999125,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 87.11491699999897,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 83.80479200000991,
+          "source": "local",
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        }
+      ]
+    },
+    {
+      "name": "after-local-lines20-60",
+      "document": 1,
+      "medianMs": 87.18712499999674,
+      "minMs": 82.52212500000314,
+      "maxMs": 96.05662499999744,
+      "samples": [
+        {
+          "ms": 90.5236670000013,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 91.9276250000039,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 86.64608299999963,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 91.02116599999863,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 85.26470800000243,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 87.4964159999945,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 85.95066600000428,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 96.05662499999744,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 88.67204199999105,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 85.62654099999054,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 86.09937500000524,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 82.52212500000314,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 87.47995799999626,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 87.18712499999674,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 85.08983300000546,
+          "source": "local",
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        }
+      ]
+    },
+    {
+      "name": "after-local-outline",
+      "document": 1,
+      "medianMs": 87.10945900001389,
+      "minMs": 84.34145799999533,
+      "maxMs": 123.97312499998952,
+      "samples": [
+        {
+          "ms": 90.18933300000208,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 87.55508299999929,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 86.02245799999946,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 86.13199999999779,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 87.10945900001389,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 86.9910830000008,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 85.4476250000007,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 88.01862499999697,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 86.61862499998824,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 108.30512499999895,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 85.8940419999999,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 87.66229199999361,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 123.97312499998952,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 87.20891700001084,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        },
+        {
+          "ms": 84.34145799999533,
+          "source": "local",
+          "bytes": 7776,
+          "characters": 7754,
+          "lines": 258
+        }
+      ]
+    },
+    {
+      "name": "after-local-budget2000",
+      "document": 1,
+      "medianMs": 94.29341600000043,
+      "minMs": 88.87154200000805,
+      "maxMs": 101.57491700000537,
+      "samples": [
+        {
+          "ms": 90.16320800000176,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 99.82004099999904,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 91.5802079999994,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 99.8715000000011,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 101.57491700000537,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 94.29341600000043,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 95.6109579999902,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 88.87154200000805,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 98.19641599999159,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 90.06229200000234,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 88.93337499999325,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 90.67883400000574,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 98.4598330000008,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 97.73870799998986,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        },
+        {
+          "ms": 90.32783299998846,
+          "source": "local",
+          "bytes": 2002,
+          "characters": 2000,
+          "lines": 66
+        }
+      ]
+    },
+    {
+      "name": "markdown-cat",
+      "document": 1,
+      "medianMs": 2.5012920000008307,
+      "minMs": 2.212874999997439,
+      "maxMs": 2.8865829999995185,
+      "samples": [
+        {
+          "ms": 2.3245419999984733,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.3256660000042757,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.7962079999997513,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.692750000001979,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.8865829999995185,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.390916999996989,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.5012920000008307,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.317666000002646,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.5241250000108266,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.7417090000089956,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.3308340000075987,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.212874999997439,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.678083000006154,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.4801670000015292,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        },
+        {
+          "ms": 2.567125000001397,
+          "source": null,
+          "bytes": 239966,
+          "characters": 239492,
+          "lines": 2747
+        }
+      ]
+    },
+    {
+      "name": "markdown-head40",
+      "document": 1,
+      "medianMs": 1.8930839999957243,
+      "minMs": 1.6901250000082655,
+      "maxMs": 2.100458000000799,
+      "samples": [
+        {
+          "ms": 1.8699160000032862,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 2.072707999999693,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 2.016541999997571,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.996500000001106,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.942084000009345,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.8929579999967245,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.7343330000003334,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 2.100458000000799,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.6901250000082655,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.8930839999957243,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.8677909999969415,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.8345839999965392,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.7913750000006985,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 1.932583000001614,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        },
+        {
+          "ms": 2.096332999994047,
+          "source": null,
+          "bytes": 1487,
+          "characters": 1485,
+          "lines": 40
+        }
+      ]
+    },
+    {
+      "name": "markdown-lines20-60",
+      "document": 1,
+      "medianMs": 2.347457999989274,
+      "minMs": 1.9829999999928987,
+      "maxMs": 2.6677080000081332,
+      "samples": [
+        {
+          "ms": 2.3427499999997963,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.054916000000958,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.5298750000001746,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.5547090000036405,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 1.9829999999928987,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.0800000000017462,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.347457999989274,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.2465420000080485,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.215374999999767,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.4142080000019632,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.3740839999954915,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.4879579999978887,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.6677080000081332,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.1299589999980526,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        },
+        {
+          "ms": 2.5412500000093132,
+          "source": null,
+          "bytes": 1290,
+          "characters": 1288,
+          "lines": 41
+        }
+      ]
+    }
+  ]
+}

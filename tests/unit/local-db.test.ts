@@ -4,7 +4,13 @@ import { Database } from "bun:sqlite";
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { LocalStore, discoverLocalStore, validateSchema } from "../../src/lib/local-db.ts";
+import {
+  LocalStore,
+  dailyTitleForDate,
+  discoverLocalStore,
+  normalizePtsMarkdown,
+  validateSchema,
+} from "../../src/lib/local-db.ts";
 
 // --- helpers ---
 
@@ -459,5 +465,157 @@ describe("isTodo fields", () => {
     const canceled = results.find((r) => r.id === "BLK-7");
     expect(canceled).toBeDefined();
     expect(canceled!.isTodoChecked).toBe(2);
+  });
+});
+
+describe("search entityType filter", () => {
+  // Regression: entityType used to be filtered in JS *after* a SQL LIMIT, so a
+  // popular term filled the page with block rows and every document hit was
+  // dropped. `cin` returned 0 documents while FTS5 held 1987 matching rows.
+  test("finds a document when many blocks match first", () => {
+    for (let i = 0; i < 60; i++) {
+      insertRow(db, {
+        id: `BULK-${i}`,
+        content: `widget noise ${i}`,
+        type: "text",
+        documentId: "DOC-INT-AAA",
+      });
+    }
+    insertRow(db, {
+      id: "A0000001-0000-0000-0000-0000000000FF",
+      content: "widget document",
+      entityType: "document",
+      documentId: "DOC-INT-ZZZ",
+    });
+
+    const docs = store.search("widget", { entityType: "document", limit: 1 });
+    expect(docs.length).toBe(1);
+    expect(docs[0]!.id).toBe("A0000001-0000-0000-0000-0000000000FF");
+  });
+
+  test("returns only documents when entityType is document", () => {
+    const results = store.search("meeting", { entityType: "document" });
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((r) => r.entityType === "document")).toBe(true);
+  });
+});
+
+describe("normalizePtsMarkdown", () => {
+  test("replaces the empty page heading with the real title", () => {
+    expect(normalizePtsMarkdown("cin OP", "# \n\nhello\n")).toBe("# cin OP\n\nhello\n");
+  });
+
+  test("handles other page heading depths", () => {
+    expect(normalizePtsMarkdown("Nonfiction", "#### \n\nbody\n")).toBe(
+      "# Nonfiction\n\nbody\n",
+    );
+  });
+
+  test("keeps a real leading heading", () => {
+    expect(normalizePtsMarkdown("Doc", "# Real Heading\n\nbody\n")).toBe(
+      "# Doc\n\n# Real Heading\n\nbody\n",
+    );
+  });
+
+  test("preserves hard breaks and blank lines in the body", () => {
+    expect(normalizePtsMarkdown("Doc", "# \n\na   \n\n\n\nb\n")).toBe("# Doc\n\na   \n\n\n\nb\n");
+  });
+
+  test("preserves fenced-code whitespace", () => {
+    const body = "# \n\n```\nline  \n\n  indented\n```\n";
+    expect(normalizePtsMarkdown("Doc", body)).toBe("# Doc\n\n```\nline  \n\n  indented\n```\n");
+  });
+
+  test("renders a title-only document", () => {
+    expect(normalizePtsMarkdown("Empty Doc", "")).toBe("# Empty Doc\n");
+  });
+
+  test("returns empty string when there is no title and no body", () => {
+    expect(normalizePtsMarkdown("", "")).toBe("");
+  });
+
+  test("normalizes CRLF input", () => {
+    expect(normalizePtsMarkdown("Doc", "# \r\n\r\nbody\r\n")).toBe("# Doc\n\nbody\n");
+  });
+});
+
+describe("dailyTitleForDate", () => {
+  test("formats as YYYY.MM.DD with zero padding", () => {
+    expect(dailyTitleForDate(new Date(2026, 8, 18))).toBe("2026.09.18");
+  });
+
+  test("pads single-digit months and days", () => {
+    expect(dailyTitleForDate(new Date(2026, 0, 3))).toBe("2026.01.03");
+  });
+});
+
+describe("getDocMarkdown", () => {
+  test("substitutes the BlockSearch title for Craft's empty page heading", () => {
+    // Craft renders the page block itself as an empty heading; the real title
+    // lives in a sibling field, and the PTS `title` can differ in case.
+    writeFileSync(
+      join(ptsDir, "document_DOC-INT-REAL.json"),
+      makePtsJson({
+        documentId: "DOC-INT-REAL",
+        title: "cin op",
+        markdownContent: "# \n\nbody text\n",
+        contentHash: "REALHASH",
+      }),
+    );
+    insertRow(db, {
+      id: "A0000001-0000-0000-0000-0000000000E1",
+      content: "cin OP",
+      entityType: "document",
+      documentId: "DOC-INT-REAL",
+    });
+
+    const doc = store.getDocMarkdown("A0000001-0000-0000-0000-0000000000E1");
+    expect(doc).not.toBeNull();
+    expect(doc!.title).toBe("cin OP");
+    expect(doc!.markdown).toBe("# cin OP\n\nbody text\n");
+    expect(doc!.contentHash).toBe("REALHASH");
+    expect(doc!.documentId).toBe("DOC-INT-REAL");
+  });
+
+  test("returns null for an unknown entity", () => {
+    expect(store.getDocMarkdown("NOPE")).toBeNull();
+  });
+
+  test("returns null when the document has no PTS file", () => {
+    insertRow(db, {
+      id: "A0000001-0000-0000-0000-000000000009",
+      content: "no pts doc",
+      entityType: "document",
+      documentId: "DOC-INT-NOPE",
+    });
+    expect(store.getDocMarkdown("A0000001-0000-0000-0000-000000000009")).toBeNull();
+  });
+});
+
+describe("findDailyDocByTitle", () => {
+  test("resolves a daily note by its YYYY.MM.DD title", () => {
+    insertRow(db, {
+      id: "A0000001-0000-0000-0000-0000000000D1",
+      content: "2026.09.18",
+      entityType: "document",
+      documentId: "DOC-INT-DAILY",
+    });
+    const found = store.findDailyDocByTitle("2026.09.18");
+    expect(found).not.toBeNull();
+    expect(found!.id).toBe("A0000001-0000-0000-0000-0000000000D1");
+  });
+
+  test("returns null when no daily note matches", () => {
+    expect(store.findDailyDocByTitle("1999.01.01")).toBeNull();
+  });
+
+  test("skips a non-daily document with a date-shaped title", () => {
+    insertRow(db, {
+      id: "A0000001-0000-0000-0000-0000000000D2",
+      content: "2026.09.19",
+      entityType: "document",
+      documentId: "DOC-INT-AAA",
+    });
+    expect(store.findDailyDocByTitle("2026.09.19")).toBeNull();
   });
 });

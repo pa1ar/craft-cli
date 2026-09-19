@@ -6,7 +6,7 @@ Single-binary Bun CLI, AI-agent-first, runs on macOS and Linux. Also exports a T
 
 > Unofficial. Not affiliated with Craft Docs.
 
-> **Agent read policy:** On macOS, keep `craft source auto`. Unfiltered `docs ls` and simple `docs search` use Craft's local cache first and fall back to REST automatically. Do not pass `--api` routinely. Full document/block reads, tasks, collections, filtered queries, and every write use REST.
+> **Agent read policy:** On macOS, keep `craft source auto`. Unfiltered `docs ls` and simple `docs search` use Craft's local cache first and fall back to REST automatically. Do not pass `--api` routinely. Markdown document reads also use the cache. Structured/raw reads, tasks, collections, filtered queries, and every write use REST.
 
 ![craft-cli demo](docs/images/craft-cli-demo.gif)
 
@@ -120,7 +120,10 @@ craft folders mk / rm            create / delete folders
 
 craft docs ls                    list documents (unfiltered: local-first in auto)
 craft docs search "query"        search content (local FTS5 or API RE2)
-craft docs get <id>              render doc via API as markdown (includes backlinks)
+craft read <id>                  read cached Markdown, with API fallback
+craft read <id> --outline        list headings with line numbers
+craft read <id> --budget 2000     bound output for an agent
+craft docs get <id> --links      include backlinks (API)
 craft docs daily [DATE]          today's daily note
 craft docs mk / mv / rm          create / move / trash documents
 craft docs open <id>             print deeplink and open in Craft app
@@ -170,7 +173,7 @@ Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--dep
 
 Keep `source=auto` on macOS. It uses Craft's local SQLite and PlainTextSearch cache for unfiltered `docs ls` and simple `docs search`, then falls back to the API if the cache is unavailable or the query needs API-only filters. `media local` separately resolves downloaded assets from Craft's on-device cache.
 
-`docs get`, `docs daily`, block reads, tasks, collections, links, filtered/fetch-block searches, and all writes use REST. The source setting controls local-capable listing/search commands; API-required commands still use REST even with `source=local`. Use `--source api` only when the task explicitly requires authoritative remote state or API-only query behavior. Check routing with `craft source --json` and availability with `craft doctor --json`.
+Markdown `read`, `docs get/daily`, `blocks get`, and `cat` also prefer the Desktop cache. Structured/raw/depth/metadata reads, tasks, collections, backlinks, filtered/fetch-block searches, and all writes use REST. Strict local Markdown reads reject missing content or unsupported flags without network access. Use `--source api` only when the task explicitly requires authoritative remote state or API-only query behavior. Check routing with `craft source --json` and availability with `craft doctor --json`.
 
 ### Current Craft API coverage
 
@@ -223,7 +226,7 @@ craft media replace <blockId> edited.mov --content-type video/quicktime
 
 ## Why this is faster than the API or MCP
 
-craft-cli uses a hybrid read architecture on macOS: eligible listing and search reads come from Craft's local SQLite FTS5 index and PlainTextSearch JSON files, while full block reads and all writes use the REST API. The local stores typically update within about a second while Craft Desktop is running and synced; use API source when authoritative remote state matters.
+craft-cli uses a hybrid read architecture on macOS: eligible listing, search, and Markdown reads come from Craft's local SQLite FTS5 index and PlainTextSearch JSON files, while structured block reads and all writes use the REST API. The local stores typically update within about a second while Craft Desktop is running and synced; use API source when authoritative remote state matters.
 
 ```mermaid
 flowchart LR
@@ -405,3 +408,16 @@ const doc = await craft.blocks.get(hits.items[0]!.documentId, { format: "markdow
 ## License
 
 MIT
+
+
+## Skills from Craft collections
+
+`craft lib list --collection ID --json` discovers published skills by metadata without body previews. `craft lib get NAME --collection ID` reads a selected skill. `craft lib export NAME --collection ID --out DIR` creates a portable single-file `SKILL.md` and refuses existing destinations. These commands use the API and leave Craft content and structure unchanged. Export is optional, not a synchronized mirror or automatic installation.
+
+See [the collection contract](docs/skill-library.md) for authoring, connection setup and current single-file limitations.
+
+## Read performance and design
+
+Aim for common local actions under 100 ms. Paired warm-cache measurements on one Mac put full Markdown reads at 58–86 ms; plain file reads remain around 3–4 ms. This is a target, not a guarantee for API calls, cold caches, or every document.
+
+Craft owns its cache and document structures. The CLI reads that cache as-is, creates no second content store, and uses API fallback when content is unavailable. Desktop sync can lag after writes; request `--source api` for immediate remote confirmation. [Measurements and method](docs/plans/completed/2026-09-19-cache-native-read-speed.md).

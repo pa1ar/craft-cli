@@ -8,6 +8,25 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+- Load CLI commands on demand, batch local `cat` reads in one helper, and avoid whole-document allocation for budget-only output.
+
+### Added
+- Collection item listing supports property and text filters, compact metadata, and opt-in previews.
+- `craft lib list/get/export` reads a remote skill catalog without body previews, validates publication metadata, retrieves selected skills, and exports single-file `SKILL.md` files without overwriting existing skills.
+- Local-first markdown reads: `docs get`, `docs daily`, `blocks get`, and `cat` serve content from the Craft Desktop PlainTextSearch cache and fall back to the API when the local copy is missing. Reads print `(local)` or `(api)` to stderr so stdout stays pipe-clean.
+- `craft read <id>` aliases `docs get`; Markdown reads support `--lines A:B`, `--head N`, `--outline`, and `--budget N` with explicit truncation and a shared budget for `cat`.
+
+### Changed
+- Expanded remote skill library help and agent manifest with the portable collection contract, setup, authoring and export workflow; bundled the adoption reference with the shipped skill.
+- Local markdown output normalizes Craft's empty page heading to the real document title, and keeps the local `craftdocs://open` deeplinks that resolve cross-space links the API renders as `invalid:out_of_scope`.
+- Backlinks are now opt-in via `--links`. They always need an API round trip, so reads no longer fetch them by default. `--no-links` is still accepted as a no-op.
+- A markdown read without backlinks is a single API request instead of two; the structured fetch is only made when backlinks need the title.
+- Keep Craft Desktop cache authoritative for ordinary reads; use `--source api` for immediate read-after-write confirmation. Remove persistent local/API equality gating.
+
+### Fixed
+- Preserve meaningful whitespace in local Markdown; enforce strict local content reads, honor raw/exhaustive flags, and validate daily dates consistently across local and API paths.
+- Local `docs search` returned zero document matches for common terms. The `entityType` filter now runs in SQL instead of after a `LIMIT`, so a term like `cin` finds its documents again.
+
 ## [0.6.2] - 2026-09-16
 
 ### Fixed
