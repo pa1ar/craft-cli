@@ -1,6 +1,12 @@
 import { parseWithGlobals, buildClient } from "../client-factory.ts";
 import { readStdin } from "../args.ts";
-import { table, err, jsonOutForArgs } from "../format.ts";
+import { table, err, jsonOutForArgs, dim } from "../format.ts";
+import {
+  filterCollectionItems,
+  filtersFromFlags,
+  itemsForAgentOutput,
+  itemsToTableRows,
+} from "../../lib/collection-items.ts";
 
 export async function runCollections(argv: string[]) {
   const sub = argv[0];
@@ -112,6 +118,19 @@ async function runItems(argv: string[]) {
     flags: {
       file: { type: "string" },
       depth: { type: "number" },
+      status: { type: "string" },
+      forai: { type: "string" },
+      forAI: { type: "string" },
+      byai: { type: "string" },
+      byAI: { type: "string" },
+      assignee: { type: "string" },
+      prop: { type: "string", multi: true },
+      text: { type: "string" },
+      q: { type: "string" },
+      limit: { type: "number" },
+      preview: { type: "boolean" },
+      flat: { type: "boolean" },
+      raw: { type: "boolean" },
     },
   });
   const { client } = await buildClient(args);
@@ -126,9 +145,35 @@ async function runItems(argv: string[]) {
     case "ls":
     case "list": {
       const id = args.positional[0];
-      if (!id) throw new Error("usage: craft col items <collectionId>");
+      if (!id) {
+        throw new Error(
+          "usage: craft col items <collectionId> [--status S] [--forai yes|no] [--byai yes|no] [--assignee forAI|byAI|pa1ar] [--prop k=v] [--text Q] [--limit N] [--flat] [--preview] [--json]"
+        );
+      }
       const res = await client.collections.getItems(id, args.flags.depth);
-      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : JSON.stringify(res.items, null, 2));
+      const filters = filtersFromFlags(args.flags as Record<string, unknown>);
+      const filtered = filterCollectionItems(res.items as any[], filters);
+      const total = res.items.length;
+      const returned = filtered.length;
+
+      if (args.flags.raw) {
+        const payload = { items: filtered, total, returned };
+        console.log(args.flags.json ? jsonOutForArgs(payload, args.flags) : JSON.stringify(filtered, null, 2));
+        return;
+      }
+
+      const cleaned = itemsForAgentOutput(filtered as any[], {
+        preview: Boolean(args.flags.preview),
+        flat: Boolean(args.flags.flat),
+      });
+      const payload = { items: cleaned, total, returned };
+
+      if (args.flags.json) {
+        console.log(jsonOutForArgs(payload, args.flags));
+      } else {
+        console.log(table(itemsToTableRows(filtered as any[])));
+        console.error(dim(`\n${returned}/${total} items`));
+      }
       return;
     }
     case "add": {
