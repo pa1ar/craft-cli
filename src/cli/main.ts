@@ -33,7 +33,7 @@ Read routing (important)
   auto uses the local Craft cache for unfiltered docs ls and simple docs search,
   then falls back to REST when unavailable or when filters require the API.
   Markdown read/get/daily/cat also use local cache first. Structured/raw reads,
-  tasks, collections, links, and every write use REST.
+  tasks, reminders, collections, links, and every write use REST.
   media local reads Craft's on-device asset cache. Local files are read-only.
 
 Read
@@ -60,6 +60,8 @@ Read
     filters: --state S --doc ID --document TEXT --date D --scheduled D --deadline D
              --location L --text TEXT --priority P --repeat yes|no --reminder yes|no --overdue
     run 'craft tasks --help' for date ranges, notification alias, and all filters
+  reminders [ls] [--status incomplete|completed|upcoming|all] [--limit N] [--cursor C]
+    run 'craft reminders --help' for create, reschedule, complete, reopen, and delete
 
 Write
   folders mk <name> [--parent ID]
@@ -77,6 +79,9 @@ Write
   tasks add <markdown> --to inbox|daily|doc [--doc ID] [--date D] [--schedule D]
   tasks update <id> [--state todo|done|canceled] [--markdown STR] [--schedule D] [--deadline D] [--to inbox|daily|doc]
   tasks rm <id>...
+  reminders add <blockId>... [--at ISO8601]       (omit --at to Save for later)
+  reminders reschedule <id>... --at ISO8601|none
+  reminders complete|reopen|rm <id>...
   undo [docId] [--force] [--dry-run]      revert last mutation
 
 Collections
@@ -205,6 +210,9 @@ async function main() {
         break;
       case "tasks":
         await (await import("./commands/tasks.ts")).runTasks(rest);
+        break;
+      case "reminders":
+        await (await import("./commands/reminders.ts")).runReminders(rest);
         break;
       case "col":
       case "collections":

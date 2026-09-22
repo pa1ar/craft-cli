@@ -29,4 +29,12 @@ export type { NewTask, TaskUpdate } from "./tasks.ts";
 export type { UploadTarget, UploadResult } from "./upload.ts";
 export type { WhiteboardElement } from "./whiteboards.ts";
 export type { NewComment } from "./comments.ts";
+export type {
+  BlockReminder,
+  BlockReminderUpdate,
+  ListRemindersOptions,
+  NewBlockReminder,
+  ReminderStatus,
+  RemindersListResponse,
+} from "./reminders.ts";
 export { extractOutgoing, inferTitle } from "./links.ts";

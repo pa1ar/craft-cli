@@ -12,6 +12,7 @@ import { makeUpload } from "./upload.ts";
 import { makeWhiteboards } from "./whiteboards.ts";
 import { makeComments } from "./comments.ts";
 import { makeLinks } from "./links.ts";
+import { makeReminders } from "./reminders.ts";
 
 export interface CraftClientOptions {
   url: string; // base url ending in /api/v1
@@ -48,6 +49,7 @@ export class CraftClient {
   readonly whiteboards: ReturnType<typeof makeWhiteboards>;
   readonly comments: ReturnType<typeof makeComments>;
   readonly links: ReturnType<typeof makeLinks>;
+  readonly reminders: ReturnType<typeof makeReminders>;
 
   constructor(opts: CraftClientOptions) {
     this.url = opts.url.replace(/\/+$/, "");
@@ -66,6 +68,7 @@ export class CraftClient {
     this.whiteboards = makeWhiteboards(this);
     this.comments = makeComments(this);
     this.links = makeLinks(this);
+    this.reminders = makeReminders(this);
   }
 
   async connection(): Promise<ConnectionInfo> {

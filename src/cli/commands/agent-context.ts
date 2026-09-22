@@ -8,7 +8,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
   const source = resolveSource(cfg);
   const payload = {
     name: "craft-cli",
-    purpose: "Agent-first CLI for Craft Docs reads, writes, search, tasks, uploads, and local-first PKM workflows.",
+    purpose: "Agent-first CLI for Craft Docs reads, writes, search, tasks, block reminders, uploads, and local-first PKM workflows.",
     defaults: {
       source: "auto",
       sourceMeaning: "read local Craft Desktop cache when available; fall back to API",
@@ -28,7 +28,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
         "read, docs get/daily, blocks get, and cat for cached Markdown",
       ],
       api: [
-        "structured/depth/metadata/raw block reads, tasks, collections, and links",
+        "structured/depth/metadata/raw block reads, tasks, reminders, collections, and links",
         "filtered or fetch-blocks document queries",
         "all writes",
       ],
@@ -39,6 +39,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
       supported: [
         "collection view CRUD and active view",
         "space-wide tasks with scope=all",
+        "experimental block reminder list/create/reschedule/complete/reopen/delete",
         "page styling and separator block fields",
         "typed media upload, local resolution, analysis, and safe replacement",
       ],
@@ -72,6 +73,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
       { command: "patch", use: "find and replace one matching block" },
       { command: "tasks", use: "list all space tasks; filter by state, document, date, repeat, or reminder" },
       { command: "tasks add", use: "create task in inbox, daily note, or document" },
+      { command: "reminders", use: "list, create, reschedule, complete, reopen, or delete block reminders" },
       { command: "col views", use: "list/create/update/delete collection view configuration and active view" },
       { command: "upload", use: "upload file and insert image/video/document block" },
       { command: "links in", use: "reconstruct backlinks" },

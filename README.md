@@ -6,7 +6,7 @@ Single-binary Bun CLI, AI-agent-first, runs on macOS and Linux. Also exports a T
 
 > Unofficial. Not affiliated with Craft Docs.
 
-> **Agent read policy:** On macOS, keep `craft source auto`. Unfiltered `docs ls` and simple `docs search` use Craft's local cache first and fall back to REST automatically. Do not pass `--api` routinely. Markdown document reads also use the cache. Structured/raw reads, tasks, collections, filtered queries, and every write use REST.
+> **Agent read policy:** On macOS, keep `craft source auto`. Unfiltered `docs ls` and simple `docs search` use Craft's local cache first and fall back to REST automatically. Do not pass `--api` routinely. Markdown document reads also use the cache. Structured/raw reads, tasks, reminders, collections, filtered queries, and every write use REST.
 
 ![craft-cli demo](docs/images/craft-cli-demo.gif)
 
@@ -140,6 +140,11 @@ craft tasks ls --state todo --document "Project" --deadline-to tomorrow
 craft tasks ls --reminder yes --repeat yes --json
 craft tasks add / update / rm       create, reschedule, move, complete, or remove tasks
 
+craft reminders                    incomplete block reminders
+craft reminders add <blockId> [--at ISO8601]
+craft reminders reschedule <id> --at ISO8601|none
+craft reminders complete / reopen / rm <id>...
+
 craft col ls / schema / items    collections and structured data
 craft col items add / update / rm
 craft col views ls/create/update/active/rm
@@ -173,11 +178,13 @@ Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--dep
 
 Keep `source=auto` on macOS. It uses Craft's local SQLite and PlainTextSearch cache for unfiltered `docs ls` and simple `docs search`, then falls back to the API if the cache is unavailable or the query needs API-only filters. `media local` separately resolves downloaded assets from Craft's on-device cache.
 
-Markdown `read`, `docs get/daily`, `blocks get`, and `cat` also prefer the Desktop cache. Structured/raw/depth/metadata reads, tasks, collections, backlinks, filtered/fetch-block searches, and all writes use REST. Strict local Markdown reads reject missing content or unsupported flags without network access. Use `--source api` only when the task explicitly requires authoritative remote state or API-only query behavior. Check routing with `craft source --json` and availability with `craft doctor --json`.
+Markdown `read`, `docs get/daily`, `blocks get`, and `cat` also prefer the Desktop cache. Structured/raw/depth/metadata reads, tasks, reminders, collections, backlinks, filtered/fetch-block searches, and all writes use REST. Strict local Markdown reads reject missing content or unsupported flags without network access. Use `--source api` only when the task explicitly requires authoritative remote state or API-only query behavior. Check routing with `craft source --json` and availability with `craft doctor --json`.
 
 ### Current Craft API coverage
 
-The 2026-09-04 alignment includes collection-view CRUD and active-view selection, space-wide tasks through documented `scope=all`, page styling and separator fields, typed media upload/insert, local media resolution, and safe media replacement. `craft raw` remains the escape hatch for newly published endpoints.
+Current coverage includes experimental block reminders, collection-view CRUD and active-view selection, space-wide tasks through documented `scope=all`, page styling and separator fields, typed media upload/insert, local media resolution, and safe media replacement. `craft raw` remains the escape hatch for newly published endpoints.
+
+Reminder availability depends on the connection. OAuth connections support single-user and multi-user spaces. Link-based API connections support reminders only when the link creator is the space's sole active participant. Reminder times require an ISO 8601 timestamp with `Z` or an explicit UTC offset; omitting the time saves the block for later without a notification.
 
 Craft app 3.6 features including editable inline tags, arbitrary custom colors, and Daily Notes range export do not currently have documented REST operations, so craft-cli does not claim support for those app-only features.
 

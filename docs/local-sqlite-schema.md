@@ -370,7 +370,7 @@ tokenizer is `unicode61` (standard Unicode tokenization, no special stemming or 
 | **daily note identification** | yes (`isDailyNote` flag) | no (must infer from title) |
 | **content hash for change detection** | yes (`contentHash`) | no |
 | **last viewed date** | yes (`lastViewed`) | no |
-| **reminder data** | yes (Reminders JSON) | no |
+| **reminder data** | yes (Reminders JSON) | yes (experimental block-reminder endpoints; connection-dependent) |
 | **notification inbox** | yes (NotificationInbox JSON) | no |
 
 ### what API gives you that local DB doesn't

@@ -1,6 +1,6 @@
 ---
 name: craft-cli
-description: Local-first Craft Docs CLI for searching, reading, and editing Pavel's Craft vault. On macOS it uses Craft Desktop's cache for eligible reads, falls back to REST when needed, and sends all writes through the API. Triggers for Craft docs, the PKM vault, LTM, daily notes, media, tasks, collections, or "c:" / "in craft".
+description: Local-first Craft Docs CLI for searching, reading, and editing Pavel's Craft vault. On macOS it uses Craft Desktop's cache for eligible reads, falls back to REST when needed, and sends all writes through the API. Triggers for Craft docs, the PKM vault, LTM, daily notes, media, tasks, reminders, collections, or "c:" / "in craft".
 ---
 
 # craft-cli — Craft Docs from the shell
@@ -11,7 +11,7 @@ description: Local-first Craft Docs CLI for searching, reading, and editing Pave
 
 1. On macOS with Craft Desktop installed, keep `craft source auto`. Do not add `--api` by habit or persist API-only mode for normal work.
 2. In `auto`, unfiltered `craft docs ls` and simple `craft docs search` queries, plus Markdown `read`, `docs get/daily`, `blocks get`, and `cat`, use Craft's local SQLite/PlainTextSearch cache first. Successful human output is marked `(local)`.
-3. `auto` falls back to REST when local data is unavailable or the query needs API-only filters. Structured/raw/depth/metadata reads, tasks, collections, backlinks, and explicit remote-state checks require the API. Strict local Markdown reads reject unsupported options.
+3. `auto` falls back to REST when local data is unavailable or the query needs API-only filters. Structured/raw/depth/metadata reads, tasks, reminders, collections, backlinks, and explicit remote-state checks require the API. Strict local Markdown reads reject unsupported options.
 4. All writes always use the REST API. Local Craft files are read-only inputs.
 5. Before a multi-read workflow, run `craft source --json`. If it reports `api` on a Mac and the task did not explicitly require authoritative remote reads, run `craft source auto`.
 
@@ -96,6 +96,17 @@ craft tasks add "review doc" --to daily --date today --schedule tomorrow
 craft tasks update <id> --state done
 craft tasks update <id> --schedule none --deadline tomorrow --to doc --doc <id>
 craft tasks rm <id>
+
+# block reminders (experimental API)
+craft reminders                              # incomplete reminders by default
+craft reminders ls --status all --limit 50 --json
+craft reminders add <blockId>                # Save for later, no notification
+craft reminders add <blockId> --at 2030-01-15T10:00:00+01:00
+craft reminders reschedule <reminderId> --at 2030-01-16T09:00:00Z
+craft reminders reschedule <reminderId> --at none   # clear time, keep Save for later
+craft reminders complete <reminderId>...
+craft reminders reopen <reminderId>...
+craft reminders rm <reminderId>...
 
 # collections
 craft col ls [--doc ID]
@@ -241,7 +252,7 @@ These stay on the API by design:
 - **api**: never touch local, every read hits the API. Use on Linux, Docker containers, or any host where Craft is not installed. Slower reads but identical behavior; journal (undo/log/diff) keeps working.
 - **local**: require the local store for local-capable listing/search commands. API-required commands still use REST. Use this source for debugging local cache behavior.
 
-Local-capable commands include unfiltered `docs ls`, simple `docs search`, cached Markdown reads, and `media local`. Structured document trees, tasks, collections, filtered searches, and writes use REST. Keep `auto` so the CLI makes that routing decision instead of forcing every read over the network.
+Local-capable commands include unfiltered `docs ls`, simple `docs search`, cached Markdown reads, and `media local`. Structured document trees, tasks, reminders, collections, filtered searches, and writes use REST. Keep `auto` so the CLI makes that routing decision instead of forcing every read over the network.
 
 **How to set it (agent workflow):**
 
@@ -275,7 +286,7 @@ Hybrid local reads are bounded by `CRAFT_LOCAL_TIMEOUT_MS` (default 1500ms). If 
 
 ## Current Craft API coverage
 
-The 2026-09-04 API alignment includes collection-view CRUD and active-view selection, space-wide tasks through documented `scope=all`, page styling and separator fields, typed media upload/insert, local media resolution, and safe media replacement. Use `craft raw` for a newly published endpoint before a dedicated wrapper exists.
+Current API coverage includes experimental block reminders, collection-view CRUD and active-view selection, space-wide tasks through documented `scope=all`, page styling and separator fields, typed media upload/insert, local media resolution, and safe media replacement. Use `craft raw` for a newly published endpoint before a dedicated wrapper exists.
 
 Craft app 3.6 features such as editable inline tags, arbitrary custom colors, and Daily Notes range export do not currently have documented REST operations. Do not imply CLI support for an app-only feature.
 
@@ -424,6 +435,7 @@ craft cat <id1> <id2> <id3>
 17. **r.craft.do URLs are signed and time-limited** — they rotate on each `GET /blocks` fetch. When cloning `video`/`image`/`file` blocks between docs, always fetch the source LIVE right before inserting and pass the fresh URL; omit `uploaded` so the API re-fetches and re-signs. If you pass a stale URL with `uploaded: true`, the block will be created but the asset will display "not available" when the signature expires. `normalizeCraftMediaBlocks` is available as an opt-in helper for the rare case where you want to force-store an as-is URL.
 18. **Media replacement creates a new block ID.** The REST API can update media layout/metadata but not its asset URL. `craft media replace` therefore uploads before the old block, verifies the replacement, and deletes the old block only after verification. Direct links to the old block do not migrate.
 19. **Local-first reads depend on the Craft app syncing.** Craft Desktop updates its local stores about one second after an API write while the app is running. If the app is closed or not syncing, local reads can be stale and a freshly written block may be missing. Use `--source api` for a guaranteed-current read, and note that the local mirror covers roughly 98 percent of documents in a space, so a miss falls through to the API on its own.
+20. **Block reminders are experimental and connection-dependent.** OAuth connections support reminders in single-user and multi-user spaces. Link-based API connections support them only when the link creator is the space's sole active participant. Reminder times must include `Z` or a UTC offset. Omitting `--at` on create saves for later without a notification; `--at none` clears an existing notification time. Completing a reminder does not complete a task on the same block.
 
 ## Library usage (Raycast / Node scripts)
 

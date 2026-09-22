@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Added
+- Experimental block reminders: `craft reminders` and `client.reminders` can list, create, reschedule, complete, reopen, and delete reminders through Craft's new REST endpoints.
+
 ## [0.7.0] - 2026-09-19
 
 - Load CLI commands on demand, batch local `cat` reads in one helper, and avoid whole-document allocation for budget-only output.

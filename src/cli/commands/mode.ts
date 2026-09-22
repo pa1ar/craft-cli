@@ -77,7 +77,7 @@ async function buildStatus(resolved: ResolvedSource): Promise<StatusPayload> {
       "docs search without --include, --fetch-blocks, folder/location, or document IDs",
       "media local for on-device assets",
     ],
-    apiRequired: ["docs get/daily", "blocks", "tasks", "collections", "links", "all writes"],
+    apiRequired: ["docs get/daily", "blocks", "tasks", "reminders", "collections", "links", "all writes"],
     policy: "keep source=auto on macOS; do not force --api for ordinary reads",
     override: isApi
       ? "CRAFT_SOURCE=auto <cmd>  or  --source auto on individual read commands"
