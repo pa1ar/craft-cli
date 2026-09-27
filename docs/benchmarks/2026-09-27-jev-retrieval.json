@@ -1,0 +1,248 @@
+{
+  "date": "2026-09-27",
+  "model": "jev-1.13.0",
+  "source": "Live Craft API through Tailscale SSH, read-only",
+  "method": "Exploratory in-sample trials, not randomized agent A/B. Each row is a single run. Variants are retained separately.",
+  "pricing": "$0.042 per million input tokens, output free, published TypeSafe rate; estimate from usage, not invoice",
+  "pricing_source": "https://docs.typesafe.ai/models",
+  "trials": [
+    {
+      "trial": "features",
+      "status": "no-promising-candidate",
+      "seconds": 5.218407042,
+      "craft_commands": 2,
+      "craft_output_bytes": 33048,
+      "jev_calls": 4,
+      "jev_seconds": 1.8688280409999996,
+      "input_tokens": 54659,
+      "estimated_jev_usd": 0.002295678,
+      "packet_bytes": 4317,
+      "selected_evidence_bytes": 2914,
+      "selected_rows": 11,
+      "sufficiency": 0.38,
+      "candidate_scores_count_by_round": [
+        25,
+        24
+      ]
+    },
+    {
+      "trial": "shallow",
+      "status": "no-promising-candidate",
+      "seconds": 2.610151959,
+      "craft_commands": 1,
+      "craft_output_bytes": 27994,
+      "jev_calls": 3,
+      "jev_seconds": 1.1831995830000002,
+      "input_tokens": 33197,
+      "estimated_jev_usd": 0.001394274,
+      "packet_bytes": 1555,
+      "selected_evidence_bytes": 241,
+      "selected_rows": 1,
+      "sufficiency": 0.72,
+      "candidate_scores_count_by_round": [
+        25
+      ]
+    },
+    {
+      "trial": "negative",
+      "status": "no-promising-candidate",
+      "seconds": 3.644731625,
+      "craft_commands": 1,
+      "craft_output_bytes": 27994,
+      "jev_calls": 3,
+      "jev_seconds": 1.276207416,
+      "input_tokens": 33152,
+      "estimated_jev_usd": 0.001392384,
+      "packet_bytes": 1414,
+      "selected_evidence_bytes": 2,
+      "selected_rows": 0,
+      "sufficiency": 0.02,
+      "candidate_scores_count_by_round": [
+        25
+      ]
+    },
+    {
+      "trial": "linked-caching",
+      "status": "no-promising-candidate",
+      "seconds": 22.020781166000003,
+      "craft_commands": 3,
+      "craft_output_bytes": 771556,
+      "jev_calls": 4,
+      "jev_seconds": 1.5979448329999997,
+      "input_tokens": 62415,
+      "estimated_jev_usd": 0.00262143,
+      "packet_bytes": 1386,
+      "selected_evidence_bytes": 2,
+      "selected_rows": 0,
+      "sufficiency": 0.03,
+      "candidate_scores_count_by_round": [
+        40,
+        40
+      ]
+    },
+    {
+      "trial": "linked-caching-v2",
+      "status": "no-promising-candidate",
+      "seconds": 10.559498207999999,
+      "craft_commands": 3,
+      "craft_output_bytes": 771556,
+      "jev_calls": 4,
+      "jev_seconds": 1.8803192079999995,
+      "input_tokens": 81520,
+      "estimated_jev_usd": 0.00342384,
+      "packet_bytes": 1517,
+      "selected_evidence_bytes": 2,
+      "selected_rows": 0,
+      "sufficiency": 0.04,
+      "candidate_scores_count_by_round": [
+        68,
+        71
+      ]
+    },
+    {
+      "trial": "video-routing",
+      "status": "no-promising-candidate",
+      "seconds": 5.094548042,
+      "craft_commands": 2,
+      "craft_output_bytes": 33048,
+      "jev_calls": 4,
+      "jev_seconds": 1.5986318759999998,
+      "input_tokens": 53820,
+      "estimated_jev_usd": 0.00226044,
+      "packet_bytes": 2140,
+      "selected_evidence_bytes": 736,
+      "selected_rows": 2,
+      "sufficiency": 0.51,
+      "candidate_scores_count_by_round": [
+        25,
+        24
+      ]
+    },
+    {
+      "trial": "nested-infrastructure",
+      "status": "no-promising-candidate",
+      "seconds": 3.492269709,
+      "craft_commands": 2,
+      "craft_output_bytes": 27414,
+      "jev_calls": 4,
+      "jev_seconds": 1.6430204170000002,
+      "input_tokens": 36496,
+      "estimated_jev_usd": 0.001532832,
+      "packet_bytes": 2189,
+      "selected_evidence_bytes": 884,
+      "selected_rows": 2,
+      "sufficiency": 0.51,
+      "candidate_scores_count_by_round": [
+        5,
+        4
+      ]
+    },
+    {
+      "trial": "video-routing-v3",
+      "status": "no-promising-candidate",
+      "seconds": 4.569143459,
+      "craft_commands": 2,
+      "craft_output_bytes": 33048,
+      "jev_calls": 4,
+      "jev_seconds": 1.5712668329999988,
+      "input_tokens": 53488,
+      "estimated_jev_usd": 0.002246496,
+      "packet_bytes": 2644,
+      "selected_evidence_bytes": 1246,
+      "selected_rows": 5,
+      "sufficiency": 0.56,
+      "candidate_scores_count_by_round": [
+        25,
+        24
+      ]
+    }
+  ],
+  "fixed_depth_baseline": [
+    {
+      "scope": "project",
+      "depth": 0,
+      "seconds": 5.672718084,
+      "bytes": 498,
+      "exit": 0,
+      "evidence_bytes": 97,
+      "rows": 1
+    },
+    {
+      "scope": "project",
+      "depth": 1,
+      "seconds": 1.3213152080000006,
+      "bytes": 27994,
+      "exit": 0,
+      "evidence_bytes": 13266,
+      "rows": 83
+    },
+    {
+      "scope": "project",
+      "depth": 2,
+      "seconds": 3.3863072499999998,
+      "bytes": 241267,
+      "exit": 0,
+      "evidence_bytes": 148746,
+      "rows": 746
+    },
+    {
+      "scope": "project",
+      "depth": -1,
+      "seconds": 3.4946808330000003,
+      "bytes": 1379546,
+      "exit": 0,
+      "evidence_bytes": 1107812,
+      "rows": 3687
+    },
+    {
+      "scope": "linked-trace",
+      "depth": -1,
+      "seconds": 1.235702625,
+      "bytes": 41986,
+      "exit": 0,
+      "evidence_bytes": 35170,
+      "rows": 144
+    }
+  ],
+  "advisor": {
+    "seconds": 0.5169222920000001,
+    "usage": {
+      "input_tokens": 16541,
+      "output_tokens": 984
+    },
+    "actions": [
+      {
+        "action": "Map Features",
+        "answer_likelihood": 0.77,
+        "overkill_likelihood": 0.49
+      },
+      {
+        "action": "root-full",
+        "answer_likelihood": 0.63,
+        "overkill_likelihood": 0.92
+      },
+      {
+        "action": "already-read",
+        "answer_likelihood": 0.33,
+        "overkill_likelihood": 0.38
+      },
+      {
+        "action": "root-depth2",
+        "answer_likelihood": 0.41,
+        "overkill_likelihood": 0.89
+      },
+      {
+        "action": "root-depth0",
+        "answer_likelihood": 0.06,
+        "overkill_likelihood": 0.26
+      },
+      {
+        "action": "Sumr Project Description",
+        "answer_likelihood": 0.2,
+        "overkill_likelihood": 0.86
+      }
+    ]
+  },
+  "raw_private_data_location": "~/dev/play/craft-jev/.private/",
+  "delivered_source_sha256": "5bf2f4beb3e0334c8a67a85d879d41fd0e99650da55c7d1a122b748263215b5c"
+}
