@@ -1,0 +1,294 @@
+{
+  "measured_at": "2026-09-27T16:10:01+0200",
+  "host": "mcFrakir",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "binary_sha256": "852b819fe1234b3e0bc774f2d8bd293a93a409bbcc2912144d499f0e7c03308c",
+  "listing": {
+    "ms": 8278.695665998384,
+    "items": 1679,
+    "bytes": 179523
+  },
+  "method": "Fresh CLI process, one warm-up then three measured serial samples per case, rotated order. SSH setup excluded. Notes/IDs omitted. No writes.",
+  "local_probe": {
+    "exit": 1,
+    "ms": 55.0716659927275,
+    "cache_available": false
+  },
+  "cases": [
+    {
+      "label": "document-1",
+      "name": "api-full",
+      "samples": [
+        {
+          "ms": 719.2133749776985,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        },
+        {
+          "ms": 383.94833300844766,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        },
+        {
+          "ms": 384.03891600319184,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 384.03891600319184
+    },
+    {
+      "label": "document-1",
+      "name": "auto-full",
+      "samples": [
+        {
+          "ms": 590.4377500119153,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        },
+        {
+          "ms": 3799.888583016582,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        },
+        {
+          "ms": 401.87558298930526,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 590.4377500119153
+    },
+    {
+      "label": "document-1",
+      "name": "api-outline",
+      "samples": [
+        {
+          "ms": 385.0030419998802,
+          "exit": 0,
+          "bytes": 29,
+          "served_by": "api"
+        },
+        {
+          "ms": 693.5536660021171,
+          "exit": 0,
+          "bytes": 29,
+          "served_by": "api"
+        },
+        {
+          "ms": 417.97275000135414,
+          "exit": 0,
+          "bytes": 29,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 417.97275000135414
+    },
+    {
+      "label": "document-1",
+      "name": "api-budget2000",
+      "samples": [
+        {
+          "ms": 2034.971167013282,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        },
+        {
+          "ms": 1418.6249590129592,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        },
+        {
+          "ms": 1712.979332980467,
+          "exit": 0,
+          "bytes": 133,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 1712.979332980467
+    },
+    {
+      "label": "document-1",
+      "name": "api-json-depth0",
+      "samples": [
+        {
+          "ms": 456.9158329977654,
+          "exit": 0,
+          "bytes": 268,
+          "served_by": null
+        },
+        {
+          "ms": 604.700582975056,
+          "exit": 0,
+          "bytes": 268,
+          "served_by": null
+        },
+        {
+          "ms": 410.35983301117085,
+          "exit": 0,
+          "bytes": 268,
+          "served_by": null
+        }
+      ],
+      "median_ms": 456.9158329977654
+    },
+    {
+      "label": "document-2",
+      "name": "api-full",
+      "samples": [
+        {
+          "ms": 1031.8774160114117,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        },
+        {
+          "ms": 1875.019416998839,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        },
+        {
+          "ms": 643.575249996502,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 1031.8774160114117
+    },
+    {
+      "label": "document-2",
+      "name": "auto-full",
+      "samples": [
+        {
+          "ms": 416.9386659923475,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        },
+        {
+          "ms": 380.5419999989681,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        },
+        {
+          "ms": 461.92154198070057,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 416.9386659923475
+    },
+    {
+      "label": "document-2",
+      "name": "api-outline",
+      "samples": [
+        {
+          "ms": 395.17741699819453,
+          "exit": 0,
+          "bytes": 99,
+          "served_by": "api"
+        },
+        {
+          "ms": 355.8353749976959,
+          "exit": 0,
+          "bytes": 99,
+          "served_by": "api"
+        },
+        {
+          "ms": 404.70783298951574,
+          "exit": 0,
+          "bytes": 99,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 395.17741699819453
+    },
+    {
+      "label": "document-2",
+      "name": "api-budget2000",
+      "samples": [
+        {
+          "ms": 424.0938749862835,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        },
+        {
+          "ms": 2416.1089160188567,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        },
+        {
+          "ms": 692.8996669885237,
+          "exit": 0,
+          "bytes": 295,
+          "served_by": "api"
+        }
+      ],
+      "median_ms": 692.8996669885237
+    },
+    {
+      "label": "document-2",
+      "name": "api-json-depth0",
+      "samples": [
+        {
+          "ms": 2166.434875020059,
+          "exit": 0,
+          "bytes": 354,
+          "served_by": null
+        },
+        {
+          "ms": 369.49079198529944,
+          "exit": 0,
+          "bytes": 354,
+          "served_by": null
+        },
+        {
+          "ms": 387.3857920116279,
+          "exit": 0,
+          "bytes": 354,
+          "served_by": null
+        }
+      ],
+      "median_ms": 387.3857920116279
+    },
+    {
+      "label": "query-craft",
+      "name": "api-search",
+      "samples": [
+        {
+          "ms": 4154.433957999572,
+          "exit": 0,
+          "bytes": 137175,
+          "served_by": null
+        },
+        {
+          "ms": 2076.734166999813,
+          "exit": 0,
+          "bytes": 137199,
+          "served_by": null
+        },
+        {
+          "ms": 1822.1480420033913,
+          "exit": 0,
+          "bytes": 137330,
+          "served_by": null
+        }
+      ],
+      "median_ms": 2076.734166999813
+    }
+  ]
+}

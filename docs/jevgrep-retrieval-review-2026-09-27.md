@@ -2,7 +2,7 @@
 
 Recommendation: fix local body-search semantics first, then trial bounded semantic ranking over locally obtained candidates. Reuse Jevgrep's separation of discovery, relevance judgment and source excerpts. Do not copy its directory-pruning policy directly to notes: vague titles and daily-note containers can hide the most relevant content.
 
-This is a research/design delivery, not a shipped search feature. No Craft documents or Desktop-owned data were changed. Existing CLI build, 220 unit tests and typecheck passed. Live user-corpus/API latency measurements remain unavailable: this host has no usable Craft cache or CLI credentials, and SSH authentication to mcFrakir failed. Existing September 19 benchmarks below are historical evidence, not fresh measurements.
+This is a research/design delivery, not a shipped search feature. No Craft documents or Desktop-owned data were changed. Existing CLI build, 220 unit tests and typecheck passed. Live API measurements were subsequently completed on mcFrakir through Tailscale SSH; see the follow-up below. Live cache measurements remain unavailable because macOS denies the SSH execution context access to Craft’s container. Existing September 19 local-cache benchmarks below remain historical evidence, not fresh measurements.
 
 ## What was established locally
 
@@ -77,4 +77,33 @@ Use typed `blocks insert --file` for native styling, nested pages/cards, media a
 - Test local/REST text and hierarchy fidelity separately from relevance. Measure fresh-write synchronization without assuming representation equality. Verify API depth and Markdown shaping savings independently.
 - Adoption gate: useful recall gains for semantic questions without regression on exact lookups, bounded total cost/output, and reduced end-to-end agent work. Model-call speed alone is insufficient.
 
-Live benchmark prerequisite remains an accessible mcFrakir SSH account or usable Craft cache/API connection on this host. No production search behavior, Craft formatting, or external notes were changed during this review.
+Tailscale SSH access is resolved: use `tailscale ssh pavel@mcfrakir` and complete its identity-check URL when prompted. The API profile works. Fresh local-cache measurements require an execution context permitted by macOS to read the Craft container. No production search behavior, Craft formatting, or external notes were changed during this review.
+
+
+## Live mcFrakir follow-up
+
+Tailscale reached mcFrakir directly in 9 ms. `tailscale ssh pavel@mcfrakir` requested a browser identity check; refreshing the existing GitHub/Tailscale sign-in completed it. Remote `id -un` returned `pavel`, and Craft API doctor passed. Installed CLI is 0.8.0 from a clean checkout at `3917bb6b8e684df881831f96a62a383f4c2a9166`; executable SHA-256 is in the raw results.
+
+The Craft Search directory exists, but `ls` under this SSH session returned `Operation not permitted`. `craft __local probe` reported unavailable; strict-local read exited 1. This is macOS container access denial, not absent Desktop cache, invalid API credentials, or unreachable Tailscale. All sampled auto reads explicitly reported `(api)`. No privacy/security settings were changed and no local speedup is claimed.
+
+Read-only API benchmark: fresh remote CLI processes, one excluded warm-up per case, three measured serial samples with rotated ordering. Timings exclude SSH establishment but include CLI startup and draining stdout. No note contents, IDs or credentials are retained in results; note bodies stay in process memory on mcFrakir. No user notes were sent to Jev. The small sample and network variability do not establish latency percentiles or causal speed gains.
+
+Initial API enumeration returned 1,679 items / 179,523 bytes in 8.279 seconds (one observation). The first two listed documents were tiny, so a second exploratory set selected the two unique documents with the longest snippets returned by API search for `craft`. This is deliberate sample selection, not a representative corpus sample.
+
+| API operation | Document A (7,294 bytes full) | Document B (4,663 bytes full) |
+| --- | ---: | ---: |
+| Full Markdown | 455 ms / 7,294 bytes | 698 ms / 4,663 bytes |
+| Auto Markdown (served by API) | 430 ms / 7,294 bytes | 438 ms / 4,663 bytes |
+| Outline | 1,089 ms / 518 bytes | 424 ms / 369 bytes |
+| Budget 2,000 characters | 549 ms / 2,002 bytes | 423 ms / 2,006 bytes |
+| JSON depth 0 (root only) | 694 ms / 423 bytes | 585 ms / 512 bytes |
+
+These are medians of three successful calls. Outline output was 92.9% / 92.1% smaller than full Markdown. Budget is measured in Unicode characters, not UTF-8 bytes, so outputs slightly exceeded 2,000 bytes. Depth-0 JSON is a different representation containing only the root, not equivalent evidence to the full note. In this small run, none of the shaping modes demonstrated a consistent latency improvement.
+
+API search for `craft` took 2.077 seconds median and returned 137,175–137,330 bytes. This supports testing compact grouped snippets and section retrieval as a context-efficiency improvement; it does not establish semantic ranking accuracy or cost savings on real notes. A classifier would add time and provider cost, so it should be evaluated against corrected lexical body search and actual agent task completion.
+
+All measured calls exited successfully. The initial tiny-document observations remain separately recorded rather than discarded or pooled with the larger-note set. The 350 ms synthetic Jev measurements were made on the other Mac and are not a controlled same-host latency comparison with these API results.
+
+Raw evidence: [initial listing/search/read samples](benchmarks/2026-09-27-live-craft-benchmark.json), [content-selected note samples](benchmarks/2026-09-27-live-craft-content-benchmark.json). Reproduce with `tailscale ssh pavel@mcfrakir 'python3 -' < benchmarks/live-craft-benchmark.py` or `benchmarks/live-craft-content-benchmark.py` (redirect stdout locally to save aggregate metrics). The selection may change as the user's corpus changes.
+
+Remaining validation: fresh local-cache timings require a macOS execution context already allowed to read the Craft container, or an explicitly approved privacy-permission change. Cache/API representation fidelity, write-to-cache sync lag and live native formatting round trips were not tested by these read-only API calls.
