@@ -1,5 +1,8 @@
 # craft-cli
 
+- craft CLI OP in Craft, the durable project page with state, decisions, ideas and ops. Start here: craftdocs://open?spaceId=8ac88104-eb82-9c72-9014-d28fdea88b25&blockId=799F17C0-BE38-4A55-A205-DC78E29328AE
+- Tasks: Pavel intents live on The Board in Craft, project craft CLI OP. Dev issues live in this repo as GitHub issues. Linear and LABS Issues are retired.
+
 ## Update chain
 
 ```mermaid
