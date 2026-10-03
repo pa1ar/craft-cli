@@ -44,6 +44,7 @@ graph LR
 
 ## Standing rules
 
+- normal Craft work uses the public stable release installed on PATH and its matching bundled skill. keep development builds scoped to CLI testing; do not link this working checkout as the routine binary. capture installation and command hiccups in the shipped instructions and regressions before the next release.
 - after any CLI surface change (new command, changed flags, new output format): update `skill/SKILL.md` in this repo. that file is the bundled distribution skill. Agents must honor a user-declared canonical skills folder first; otherwise register the bundled skill in the active harness's user-skill directory. Do not assume a Claude-specific path
 - after any CLI change: rebuild binary (`bun run build`), run tests (`bun test`), typecheck (`bun run typecheck`), verify skill still accurate
 - after any install-affecting change (new dependency, build step, binary location, skill layout): re-run `./install.sh` on a clean checkout or read it top-to-bottom to verify it still works end-to-end

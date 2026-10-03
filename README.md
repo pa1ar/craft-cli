@@ -17,47 +17,49 @@ Single-binary Bun CLI, AI-agent-first, runs on macOS and Linux. Also exports a T
 To install craft-cli, paste the block below into your AI coding agent (Claude Code, Codex, OpenCode, Cursor, etc.). The agent will handle clone, build, install, authentication, and skill registration.
 
 ```text
-You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Follow these steps in order. Stop and ask me if anything is ambiguous, otherwise proceed end-to-end.
+You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Use the latest public stable release and its matching bundled skill. Proceed end-to-end; ask only when a required choice or credential is missing.
 
 1. RUNTIME CHECK
    Check whether `bun` is on PATH. If yes, continue.
-   If not:
-     - If I have a stated package-manager preference, use that.
-     - Otherwise, install Bun: `curl -fsSL https://bun.sh/install | bash` (do not switch to npm/pnpm/yarn — this project is Bun-first; the build script and binary path assume Bun).
+   If not, use my stated package-manager preference, or install Bun from https://bun.sh. This project builds with Bun.
 
-2. CLONE + BUILD + INSTALL
-   git clone https://github.com/pa1ar/craft-cli.git ~/dev/craft-cli
-   cd ~/dev/craft-cli && ./install.sh
-   If `install.sh` fails or is unavailable, fall back to:
-     bun install && bun run build
-     mkdir -p ~/.local/bin && ln -sf "$PWD/dist/craft" ~/.local/bin/craft
-   Verify `~/.local/bin` is on PATH. Add it to my shell rc if missing (detect zsh vs bash from $SHELL).
+2. RELEASE + BUILD + INSTALL
+   Resolve the latest public stable release:
+   CRAFT_RELEASE_TAG="$(bun -e 'const r = await fetch("https://api.github.com/repos/pa1ar/craft-cli/releases/latest"); if (!r.ok) throw new Error("GitHub release lookup failed: " + r.status); const release = await r.json(); if (!release.tag_name || release.draft || release.prerelease) throw new Error("No stable release"); console.log(release.tag_name)')"
+   Stop if that lookup fails. Do not silently install main or a local development binary.
+   CRAFT_RELEASE_DIR="$HOME/.local/share/craft-cli/releases/$CRAFT_RELEASE_TAG"
+   If the release directory already exists, preserve it. Verify its origin, tag commit and tracked source state before reuse; use a fresh directory if it has local edits.
+   git clone --branch "$CRAFT_RELEASE_TAG" --depth 1 https://github.com/pa1ar/craft-cli.git "$CRAFT_RELEASE_DIR"
+   cd "$CRAFT_RELEASE_DIR"
+   Read this release's install.sh, then run ./install.sh.
+   If install.sh fails, diagnose and report the failure before using its documented manual build/link equivalent. Keep the same release tag.
+   Verify `~/.local/bin` is on PATH and `command -v craft` resolves to this release's binary. Add the PATH entry to my shell rc only if missing (detect zsh vs bash). Use `craft` from PATH for normal work.
+   Record the release tag and `git rev-parse HEAD`; version alone does not prove a build came from a release.
 
-3. AUTHENTICATE
-   Ask me for the Craft API URL and API key. I get them from Craft → Connections → New API Connection. The URL looks like `https://connect.craft.do/links/XXX/api/v1`, the key starts with `pdk_`.
-   Then run: craft setup --url "<URL>" --key "<KEY>"
+3. CONNECTION
+   Run `craft doctor --json` to check existing configuration. Preserve a working connection and verify the intended space; do not ask for credentials again.
+   If configuration is missing or invalid, ask for the Craft API URL and API key from Craft → Connections → New API Connection, then run `craft setup --url "<URL>" --key "<KEY>"`.
+   Do not print stored API keys. A Craft connector may point to a different space than the CLI.
 
 4. READ SOURCE
-   On macOS with Craft Desktop installed, run `craft source auto`. Keep this setting: eligible reads use Craft's local cache first and automatically fall back to REST. Do not persist API-only mode or add `--api` to ordinary reads.
-   Only on Linux, remote/headless hosts, or machines without Craft Desktop, run `craft source api`.
+   On macOS with Craft Desktop installed, run `craft source auto`. Eligible reads use the local cache first and fall back to REST. Do not persist API-only mode or add `--api` to ordinary reads.
+   On Linux, remote/headless hosts, or machines without Craft Desktop, use `craft source api`.
 
 5. VERIFY
-   craft doctor --json     # confirms auth, API, effective source, and local availability
-   craft docs ls           # on macOS, human output should end with "documents (local)"
+   command -v craft
+   craft doctor --json     # connection, intended space, source and local availability
+   craft docs ls           # local output is marked "documents (local)" when the cache is available
+   Use `craft --help` and `craft which <capability>` for this release's command names. Do not substitute Craft MCP command syntax.
 
-6. SKILL REGISTRATION
-   The repo ships an agent skill at `skill/SKILL.md` with the full command surface, recipes, and caveats.
-   First honor any canonical skills folder or craft-cli skill location I have already specified. If that location contains a craft-cli skill, use it and do not replace it with a harness-specific copy.
-   Otherwise, determine where this agent harness loads user skills and register the bundled `skill/` directory there. Prefer a symlink on local systems so updates remain connected to the repo. If the harness location is unknown, ask me for the canonical skills directory rather than assuming a Claude, Codex, Cursor, or other vendor-specific path.
-   Verify that the registered `SKILL.md` is readable through the harness, then read that canonical installed skill before non-trivial craft-cli use.
+6. MATCHING SKILL
+   Use the complete `skill/` directory from the same release, including references, rather than a development checkout's skill.
+   Honor my canonical skills folder first. Preserve existing customizations before replacing or updating a skill. For an existing custom skill, compare it with this release and explicitly resolve differences; do not silently mix versions.
+   Register the canonical skill directory in the harness's supported user-skill location. Prefer symlinks and preserve real directories. If no canonical folder is specified, use the current harness's supported location; ask only if it cannot be determined.
+   Inspect installer-created skill links: older releases may link only Claude automatically. Ensure the current harness can read the matching `SKILL.md` and its references, then read that skill before normal CLI work.
+   Keep fixes for the next release in the development repo; keep the installed release and its skill unchanged while testing the public version.
 
 7. REPORT BACK
-   Tell me:
-     - which source is active (auto vs api vs local),
-     - whether the local Craft store was detected and which reads can use it,
-     - where the binary landed,
-     - where the skill is registered,
-     - any step you skipped and why.
+   Tell me the release tag and commit, resolved binary path, skill location and harness registration, effective read source, intended Craft space, local-cache availability, and any installation failure or workaround.
 ```
 
 ---

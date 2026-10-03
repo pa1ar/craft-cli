@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Changed
+- Install guidance selects a public stable release with its matching skill; installer skill linking now requires an explicit destination and verifies PATH/source/connection in its next steps.
+
 ## [0.8.0] - 2026-09-22
 
 ### Added

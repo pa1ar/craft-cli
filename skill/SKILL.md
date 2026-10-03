@@ -5,7 +5,7 @@ description: Local-first Craft Docs CLI for searching, reading, and editing Pave
 
 # craft-cli — Craft Docs from the shell
 
-`craft` is the compiled Bun CLI. Locate it with `command -v craft`; source checkouts and binary install paths are setup-specific. Library exports at `@1ar/craft-cli/lib` are available for Raycast/Node reuse when that package is installed.
+`craft` is the compiled Bun CLI. Use `craft` from PATH and locate it with `command -v craft`. Normal installations use a public stable release tag and the complete bundled skill from that same tag; keep unreleased fixes in the development repo until they ship. Release provenance includes the tag, commit and resolved binary path, not just the package version. Library exports at `@1ar/craft-cli/lib` are available for Raycast/Node reuse when that package is installed.
 
 ## Required read routing
 
@@ -18,8 +18,8 @@ description: Local-first Craft Docs CLI for searching, reading, and editing Pave
 ## When to use this vs the Craft MCP server
 
 - **Use `craft` CLI**: bulk scans across docs, tag renames, anything touching >5 blocks, scripted pipelines (pipe to jq, grep), cases where MCP's rate limits bite, anything you want to repeat via shell history.
-- **Use the configured Craft MCP server**: single interactive read of a known block, when the CLI isn't installed, quick one-off edits.
-- **Both are safe**: they hit the same API. The CLI is just faster and more scriptable.
+- **Use the configured Craft MCP server**: when explicitly requested or when the CLI is unavailable and a connector fallback is appropriate. If the user requests CLI use, fix installation rather than silently switching.
+- Connections can target different spaces. Verify the intended space with `craft doctor --json`; do not assume the connector and CLI share a connection or command syntax.
 
 ## Setup check
 
@@ -27,9 +27,15 @@ description: Local-first Craft Docs CLI for searching, reading, and editing Pave
 command -v craft >/dev/null && craft whoami
 ```
 
-If `command -v craft` fails, install or register the CLI for the current harness before configuring it. If the binary exists but `craft whoami` fails, configure a connection with `craft setup --name <PROFILE> --url <URL> --key <KEY>`. A public remote skill library can use `craft lib ... --url <URL>` without setup. Do not assume a default profile, space, or collection on another setup.
+If `command -v craft` fails, follow the release installation instructions in README.md. Do not use a development checkout’s `dist/craft` as an undocumented fallback. Check PATH and skill registration before configuring a new connection. If the binary exists but `craft whoami` fails, configure a connection with `craft setup --name <PROFILE> --url <URL> --key <KEY>`. A public remote skill library can use `craft lib ... --url <URL>` without setup. Do not assume a default profile, space, or collection on another setup.
 
 Env overrides: `CRAFT_URL`, `CRAFT_KEY`, `CRAFT_PROFILE`, `CRAFT_SOURCE` (see Source section), legacy `CRAFT_MODE`, `CRAFT_LOCAL_PATH`, `CRAFT_LOCAL_TIMEOUT_MS`.
+
+Use `craft --help` and `craft which <capability>` to discover supported syntax. Collection commands are `craft col schema/items`, not MCP `collections items-*` commands; do not assume every command group supports `--help`.
+
+## Installer skill registration
+
+`install.sh` installs the binary into `~/.local/bin`. Skill linking is explicit: `--skill-dir PATH` links `PATH/craft-cli`; `--skill-only --skill-dir PATH` skips the build. It preserves existing real directories and does not select a harness automatically. Honor a declared canonical skill directory, then expose it to the active harness. Older releases may still auto-link only Claude; inspect and resolve those links when installing them.
 
 ## Command cheatsheet
 
