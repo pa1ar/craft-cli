@@ -1,7 +1,7 @@
 # Canonical Craft skills document, picker, and optional mirror
 
 Date: 2026-10-08
-Status: active. Pavel authorized implementation and release on 8 October 2026. Full skill folders ship in v1. GitHub publication is explicit configuration, pull request by default, direct commit optional.
+Status: completed. Shipped in 0.9.0; final OP update and subsequent end-to-end checks passed. Pavel authorized implementation and release on 8 October 2026. Full skill folders ship in v1. GitHub publication is explicit configuration, pull request by default, direct commit optional.
 Issue: [craft-cli #6](https://github.com/pa1ar/craft-cli/issues/6)
 Craft: [plan](craftdocs://open?spaceId=8ac88104-eb82-9c72-9014-d28fdea88b25&blockId=7c4a39ac-da5a-6ead-0dea-4daaee17b22c), [Board card](craftdocs://open?spaceId=8ac88104-eb82-9c72-9014-d28fdea88b25&blockId=915c2c3e-7e8b-c18e-a838-cc0b839040d2), [research log](craftdocs://open?spaceId=8ac88104-eb82-9c72-9014-d28fdea88b25&blockId=2dc3c88f-acc5-e646-7f40-c19e7ba899b8).
 
@@ -13,15 +13,15 @@ Craft owns the selected library's contents. Mirrors are generated outputs. Local
 
 ## Earlier work and live findings
 
-- The completed [19 September plan](completed/2026-09-19-craft-skill-library.md), [second opinion](../craft-skills-second-opinion-2026-09-19.md), and [portable contract](../../skill/references/skill-library.md) cover `craft lib list/get/export`.
-- The [Unslop pilot](../skill-library-unslop-pilot-2026-09-19.md) verified live Craft retrieval, file validation, and explicit native Codex invocation. Automatic selection, multi-file packages, and GitHub sync were outside that pilot.
+- The completed [19 September plan](2026-09-19-craft-skill-library.md), [second opinion](../../craft-skills-second-opinion-2026-09-19.md), and [portable contract](../../../skill/references/skill-library.md) cover `craft lib list/get/export`.
+- The [Unslop pilot](../../skill-library-unslop-pilot-2026-09-19.md) verified live Craft retrieval, file validation, and explicit native Codex invocation. Automatic selection, multi-file packages, and GitHub sync were outside that pilot.
 - Current implementation: `src/lib/skill-library.ts` validates metadata and fetches one selected body; `src/cli/commands/lib.ts` always uses the API and exports one new SKILL.md without replacing existing directories.
 - Live check on 8 October: the existing collection contains 127 rows; normal discovery accepts 14 published skills and rejects one invalid name. Drafts and other kinds are excluded. Do not interpret all 127 rows as published skills.
 - `lib get tend-board` and `lib get tend-skills` both fail on table blocks today. These skills are discoverable but cannot be loaded through the exporter. Broaden the shared renderer before claiming normal Craft skill compatibility.
 - The current SKILLS document already contains an introduction and collection. The `tend-skills` note describes a future Craft-to-GitHub sync contract; no such production sync exists in current CLI code. Preserve its intent, then update the wording when behavior ships.
 - `craft skills` already names a separate executable automation runner. Extend `craft lib`; preserve that existing command meaning.
 - Craft Desktop's SQLite/PlainTextSearch adapters expose text and document metadata, but lack a reliable structured collection schema, membership, and per-block tree. Markdown tables are unsuitable as canonical row identity.
-- Existing [Jev evaluation](../jev-executive-evaluation-2026-09-28.md) found mixed reranking results and some gains for paraphrases and next-read advice. It used project-note tasks, not skills. A skill-specific evaluation is required.
+- Existing [Jev evaluation](../../jev-executive-evaluation-2026-09-28.md) found mixed reranking results and some gains for paraphrases and next-read advice. It used project-note tasks, not skills. A skill-specific evaluation is required.
 
 ## Research that affects this design
 
@@ -162,3 +162,21 @@ Chosen defaults after build authorization: full packages; keyword selection unle
 - Canonical live collection fully refreshes all accepted published packages. One existing published CLAUDE.md row has an invalid skill name and remains rejected; publication stops until its owner fixes the metadata or kind. Existing manual engineering skills retain ownership.
 
 Selected-body retrieval avoids eager attachment downloads. Resource reads download only the requested attachment; full refresh/export/sync fetch and validate complete folders.
+
+## Delivery evidence
+
+Shipped [0.9.0](https://github.com/pa1ar/craft-cli/releases/tag/v0.9.0), release commit cf24f4bd83c4f591cd728bf44f62bd88d667cf14. A fresh public-tag clone and install.sh built and installed the matching binary; doctor confirms connection, API and auto/local availability. This CLI has no --version flag: verify package version, release commit and resolved binary path. The initial installer invocation used the previous checkout; rerunning from the fresh tag restored the correct binary and the canonical harness skill link.
+
+Released fresh Codex CLI and Claude Code sessions both returned the Policy marker through prompt-hook context and demand-loaded references. Released live API/local body and resource SHA and exact bytes match. Released local sync reports changed=[] and written=false. Synthetic GitHub PR and direct publication were verified; [QA PR](https://github.com/pa1ar/skills/pull/1) was closed and its temporary branch deleted without merging.
+
+[Public update and brand animation](https://1ar.io/updates/craft-cli-0-9-0) deployed from website commit 24b38f0 to production dpl_743qPTka8yBVRNyxS5hm5oPgUxB1. Public routes return 200, media bytes match, and Chrome playback reaches readyState=4 with advancing time and no error. Website tracking: [issue 35](https://github.com/pa1ar/1ar.io/issues/35).
+
+[Canonical authoring skill](craftdocs://open?spaceId=8ac88104-eb82-9c72-9014-d28fdea88b25&blockId=4ff88675-51d3-d01e-95ff-cd0d96afdff5) published in Craft, reviewed through export, and copied downstream to pa1ar/skills. The canonical library is bound with its existing guide; no destination or global hook is inferred. Existing invalid published CLAUDE.md metadata still blocks library-wide sync, while accepted skills remain readable and selectable.
+
+Closeout order: Board, issue, daily, canonical guidance and site first; craft-cli OP last; final released end-to-end smoke afterward.
+
+## Final closeout result
+
+Website issue 35 and craft-cli issue 6 are closed. Board card is in Review. Daily and canonical guidance were updated first; craft-cli OP was the final operational update and its current callout, typed blocks, links and placement were read back. Other agents' blocks were preserved.
+
+After that OP update, typecheck, compiled build and the full test suite passed again (228 pass, 28 credential-gated skips, 0 fail). The released live flow passed API/local byte and SHA parity, progressive reference retrieval, capped selection, unchanged sync, the canonical binding in both sources and public production routes. Canonical refresh completed with 17 published packages and guide ready offline. Fresh Codex CLI and Claude Code sessions then returned the expected Policy marker through the released hook/CLI flow. No global hook or inferred mirror target was installed.
