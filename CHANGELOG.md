@@ -8,6 +8,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-08
+
 ### Added
 - Canonical Craft skills documents, progressive keyword/Jev selection, offline snapshots, complete portable packages, managed local/GitHub sync, and Codex/Claude prompt hooks.
 
@@ -116,7 +118,8 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/pa1ar/craft-cli/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/pa1ar/craft-cli/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/pa1ar/craft-cli/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/pa1ar/craft-cli/compare/v0.6.1...v0.6.2
