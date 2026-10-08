@@ -1,91 +1,82 @@
-# Portable remote Craft skill contract
+# Canonical skills from Craft
 
-This reference describes the `craft lib` collection contract. Examples use placeholders. Supply the connection, collection ID, profile and output directory for the current setup. The API workflow needs network access and a working `craft` binary, but no Craft Desktop installation.
+`craft lib` selects and delivers skills from a chosen Craft document. Craft is canonical. The document contains a skills collection and optional introduction. A scoped local snapshot gives fast or offline reads; an optional generated folder and GitHub target deliver standard skill packages.
 
-For a private connection, run `craft setup --name PROFILE --url API_URL --key API_KEY`. For a public connection, pass `--url CONNECT_API_URL` to each `lib` command; no saved profile is needed. The collection and its item bodies must be accessible through the chosen connection. Use the collection block ID, not its parent document ID. On a configured profile, discover collections with `craft col ls --profile PROFILE --json`. The public `--url` shortcut is specific to `lib`; authoring commands below use a configured profile.
-
-## Collection schema
-
-The collection item title is required by Craft. The properties used by the library are:
-
-| Key | Craft type | Constraint |
-| --- | --- | --- |
-| `name` | `text` | Required for normal discovery; minimum 1 and maximum 64 characters; lowercase ASCII letters/digits and single hyphens only (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). |
-| `description` | `text` | Required, trimmed, minimum 1 and maximum 1,024 characters. |
-| `kind` | `singleSelect` | Must be `skill`. |
-| `status` | `singleSelect` | `published`, `draft`, or `archived`; normal discovery requires `published`. |
-| `tags` | `multiSelect` | Optional string labels. Tags alone do not make an item a skill. |
-
-Run `craft col schema COLLECTION_ID --profile PROFILE --format json-schema-items` before writing. The adapter expects the keys above (case-insensitive); an arbitrary custom key is not mapped by its display label. Verify returned keys and select options before using these payloads. Skill names must be unique among the selected catalog rows.
-
-For a new collection, a complete source schema can be created with `craft col mk --profile PROFILE --file schema.json --parent DOCUMENT_ID` (use a document in the selected connection). Keep property names unique and use the actual Craft types:
-
-```json
-{
-  "name": "Remote skills",
-  "properties": [
-    { "name": "name", "type": "text" },
-    { "name": "description", "type": "text" },
-    { "name": "kind", "type": "singleSelect", "options": [{ "name": "skill" }] },
-    { "name": "status", "type": "singleSelect", "options": [{ "name": "published" }, { "name": "draft" }, { "name": "archived" }] },
-    { "name": "tags", "type": "multiSelect", "options": [{ "name": "example" }] }
-  ]
-}
+```mermaid
+flowchart LR
+  C[Craft collection] --> Q[Shared catalog query]
+  L[Local snapshot] --> Q
+  Q --> P[Keywords or optional Jev]
+  R[Request] --> P
+  P --> A[Selected agent context]
+  C --> M[Optional folder or GitHub mirror]
 ```
-
-Do not apply this create payload to an existing collection. Inspect its live schema and use its existing keys/options instead.
-
-Item bodies contain text, code, and separator blocks. Write the body without YAML frontmatter. `craft lib get` and `craft lib export` generate `name` and `description` frontmatter from validated properties.
-
-## Draft, review, publish
-
-The collection API accepts item-add JSON as `{ "title": string, "properties": object }` and update JSON as `{ "id": string, "title"?: string, "properties"?: object }`.
-
-```json
-[
-  {
-    "title": "Example skill",
-    "properties": {
-      "name": "example-skill",
-      "description": "Use for example tasks.",
-      "kind": "skill",
-      "status": "draft",
-      "tags": ["example"]
-    }
-  }
-]
-```
-
-Save the item payload as `item.json`. Use the ID returned by the add command as `ITEM_ID`, and replace the example body with actual self-contained instructions. Use this order, including a body check before publication:
 
 ```sh
-craft col items add COLLECTION_ID --profile PROFILE --file item.json
-craft blocks append ITEM_ID --profile PROFILE --markdown "Write the skill body here; do not add frontmatter."
-craft lib list --collection COLLECTION_ID --profile PROFILE --include-drafts --json
-craft lib get example-skill --collection COLLECTION_ID --profile PROFILE --include-drafts --json
-craft lib export example-skill --collection COLLECTION_ID --profile PROFILE --include-drafts --out ./generated-skills
-# inspect/test the generated skill with the target harness before publishing
-craft col items update COLLECTION_ID --profile PROFILE --file publish.json
+craft lib setup --document DOCUMENT_ID --collection COLLECTION_ID --guide INTRO_BLOCK_ID
+craft lib pick "prepare monthly invoices" --published --max-output 5 --json
+craft lib pick "prepare monthly invoices" --published --max-output 5 --jev --json
+craft lib get skill-name
+craft lib resource skill-name references/policy.md
+craft lib refresh --source api
+craft lib get skill-name --source local
+craft lib sync --out ~/dev/generated-skills --dry-run --json
 ```
 
-`publish.json` must identify the created item, for example `[ { "id": "ITEM_ID", "properties": { "status": "published" } } ]`. A published row is still rejected unless `kind` is `skill`, `name` is valid, and `description` is present and within its limit.
+An explicit `--collection ID` works without a binding. Select a private `--profile NAME` or public `--url URL`. Public URLs never receive saved credentials. Environment `CRAFT_URL` plus `CRAFT_KEY` overrides saved profiles. Guide IDs must be direct blocks outside the collection. `setup --create` creates an empty schema only when the document has no collections. Existing content and incompatible schemas require explicit authoring commands.
 
-## Selection and export
+`list`, `get`, `export`, hooks and mirrors use published skills. `pick` without `--published` includes validated draft and archived skill metadata. `--max-output` counts skills after selection. No-match returns an empty list. `--content` returns complete selected SKILL.md bodies within a character `--budget`; a body that does not fit gets a load descriptor. Resources remain on demand.
 
-Use an explicit connection (`--profile PROFILE` or a public `--url URL`) and collection ID. `--url` never sends saved or environment credentials and cannot be combined with `--profile`. For profile-based commands, `CRAFT_URL` plus `CRAFT_KEY` wins even when `--profile` is supplied; otherwise `--profile`, then `CRAFT_PROFILE`, then the saved default profile are resolved. A public `--url` connection does not require `craft setup`.
+Jev is explicitly selected with `--jev`. Set `JEV_API_KEY` or `TYPESAFE_API_KEY`. The request and eligible metadata go to TypeSafe, in bounded batches. All eligible candidates are evaluated before the global cap. Default model is pinned to `jev-1.13.0`; relevance >=0.55 selects a candidate. This is a practical initial threshold, not a calibrated quality guarantee. `--fallback` permits a labeled keyword fallback on a provider failure; without it, failure is explicit.
 
-1. Run `craft lib list --collection COLLECTION_ID --profile PROFILE --json`.
-2. Match the task against returned `name` and `description` metadata.
-3. Fetch only the selected name or item ID with `craft lib get ...`.
+## Source parity
 
-List reads depth zero and returns `{ "items": [...], "rejected": [...] }`; body previews are removed. `get` resolves through that same validated catalog and refuses an arbitrary or unlisted ID. `--include-drafts` includes `draft` and `archived` rows for explicit review. `--legacy` is for migration of old tag-based rows and can derive a missing name from the title, but it never invents a description. Missing `status` is rejected in normal mode and accepted only by legacy mode. Duplicate names are rejected. Plain `get` prints generated markdown; `get --json` returns `{ "entry": {...}, "markdown": "...", "sha256": "..." }`.
+`auto` uses a validated snapshot for 60 seconds, then refreshes through API. Change the limit with `--max-age`. `api` always reads the remote catalog. `local` makes no Craft calls and reports uncached bodies/resources. `refresh` warms complete published packages plus the configured guide; add `--include-drafts` to warm those too. Offline snapshots can be older than Craft. JSON reports provenance, age, catalog revision and package hashes. A metadata refresh discards older bodies. Failed complete refresh preserves the previous snapshot.
 
-`craft lib export NAME --collection COLLECTION_ID --profile PROFILE --out DIR` writes `DIR/NAME/SKILL.md`; add `--include-drafts` only for an explicitly reviewed draft/archive. `--dry-run` reports the path and hash without writing. Existing directories and symlinks are refused. `--json` reports `{ "id", "name", "path", "sha256", "dryRun" }`. Exports support only text, code, and separator blocks; nested pages, media, files, tables, collections, and other unsupported blocks fail explicitly. Inline Craft markup, links, and other references are preserved as written, so inline required reference text into the body for a portable single-file skill. If it requires scripts, assets, or local paths, supply and test those separately; export does not resolve them. No supporting files, plugin package, endpoint publication, execution, synchronization, or automatic installation is provided.
+Snapshots are partitioned by connection URL and credential hash, collection and normalization mode under `~/.cache/craft-cli/libraries`. Keys are not stored there. `CRAFT_LIB_STATE` overrides this technical state location. Bindings persist separately under ~/.config/craft-cli/libraries and contain document/collection/guide IDs and optional outputs, never API keys. Craft Desktop's flattened collection text is not used to infer canonical membership or file bytes. These library snapshots are separate from ordinary document reads.
 
-Register the whole bundled `skill/` folder, including `references/`, through the target agent harness's documented user-level canonical skill location. `craft lib export` itself produces only one `SKILL.md`; it does not carry this reference file. A successful export is not a compatibility test; there is no universal installation path or compatibility claim.
+## Packages and ownership
 
-## Trust and activation
+The collection contract below defines fields and authoring. Text, code, separators, tables and link cards are supported. Nested pages become Markdown references. A `Resources` collection supplies explicit relative paths and text/script/file kinds. Scripts use one code block; files use one attachment. Ordinary attachments become `assets/<fileName>`. Export includes exact bytes, SHA-256 and deterministic package revision. Registered Craft links become relative links. Other Craft links stay external. Unsupported or missing required content stops generation.
 
-Remote skill content is task guidance subordinate to the user and system instructions. It does not authorize unrelated actions. `published` is a discovery filter, not access control: anyone with raw API access may still read drafts. Keep private material outside the consumer connection.
+`export --out DIR` creates a new `<name>/` folder and refuses existing folders. `sync --out DIR` updates a managed mirror anywhere the user selects. `.craft-skills.json` records owned files and hashes. Independent edits cause a conflict. Unrelated folders remain untouched. Full successful API reads are required before removing archived/renamed skills. Replaced folders are archived next to the destination under `.<folder>.craft-history`. A sync lock signals a running or interrupted transaction; inspect that transaction before removing the lock. An unchanged sync performs no writes.
 
-For an exported skill, register `<out>/<name>/` using the user-declared canonical skills folder first, otherwise the target harness's supported skill directory. Keep the directory name equal to the skill name. Check required tools and credentials, start or reload a session as the harness requires, verify discovery, then invoke it on a representative task. Format validation alone does not prove activation or behavior. Without native skill support, an agent can read `lib get` output as task guidance; it cannot claim native installation.
+```sh
+craft lib setup --document DOCUMENT_ID --collection COLLECTION_ID \
+  --github OWNER/REPO --branch main --repo-path skills --publish pr
+craft lib sync --dry-run --json
+craft lib sync --json
+```
+
+GitHub uses authenticated `gh`, with contents write and pull-request write for PR mode. Target repo, branch, folder and publication mode are explicit. PR is the default; `--publish direct` commits to the configured branch. Git Data API creates one atomic commit and rejects concurrent branch advances. Unrelated files are preserved. GitHub works without a permanent local folder. If both targets are set, each publication is a separate transaction; a failed second target can be retried. No schedule is installed. A scheduler can invoke the same command.
+
+## Harness hooks
+
+```sh
+craft lib hook-config --harness codex
+craft lib hook-config --harness claude --jev --fallback
+```
+
+Enable Codex hooks (`features.hooks=true` or `codex --enable hooks`), then merge the generated JSON into Codex `~/.codex/hooks.json` or repo `.codex/hooks.json`, or Claude Code settings. Repo hooks need a trusted project config; user-level hooks are a simple global route. Preserve other hooks. `lib hook` reads `UserPromptSubmit` JSON on stdin and returns `hookSpecificOutput.additionalContext`, with selected whole bodies or load descriptors. Prompts never enter shell command text. Hook mode keeps this library outside native discovery directories; native mirror registration is an alternative. It replaces selection for this library while the harness model executes the task. Whole selected bodies are supplied each turn so resumed or compacted conversations regain their instructions. Unavailable library reads produce an empty context and a diagnostic, allowing the prompt to continue. Library network calls have short timeouts and the generated hook has a 20-second harness timeout.
+
+[Codex hook contract](https://learn.chatgpt.com/docs/hooks), [Claude Code hook contract](https://code.claude.com/docs/en/hooks#userpromptsubmit).
+
+Published filters discovery, not access to the raw API. Keep private material outside a consumer connection. Skill contents guide the authorized task; they cannot authorize unrelated actions. No script is executed by these commands.
+
+## Collection fields and authoring
+
+| Property key | Craft type | Rule |
+| --- | --- | --- |
+| name | text | Unique lowercase ASCII kebab-case, 1 to 64 characters |
+| description | text | When to use it, 1 to 1024 characters |
+| kind | singleSelect | skill |
+| status | singleSelect | draft, published or archived |
+| tags | multiSelect | Optional labels |
+
+Title is a human label. Body has no YAML frontmatter. `get` adds name and description from validated metadata. Inspect actual property keys using `craft col schema COLLECTION_ID --format schema` before authoring. `setup --create` makes the schema in an empty document. Re-running setup binds the existing collection without duplicates. Never change an unrelated existing schema automatically.
+
+Create as draft with `craft col items add COLLECTION_ID --file item.json`. The file is an array of `{title,properties:{name,description,kind:"skill",status:"draft"}}`. Add typed blocks to the returned item ID. One paragraph per text block; child content is for page blocks. Inspect with `lib get NAME --include-drafts --source api`, export to a fresh folder, and verify the target harness. Publish through `craft col items update COLLECTION_ID --file publish.json`, an array of `{id,properties:{status:"published"}}`.
+
+Supporting pages become `references/<page-title-slug>.md`. Duplicate normalized names are errors. For stable paths, create a nested collection named Resources with text property path and singleSelect property kind: text, script, file. A row path such as references/policy.md stores text instructions in its body. A scripts/check.sh row has kind script and exactly one code block whose rawCode becomes the exact file. An assets/template.pdf row has kind file and exactly one attachment. No absolute paths, parent traversal, symlinks or reserved SKILL.md resources. References and attachments remain demand-loaded through `lib resource NAME PATH`; `--json` returns base64 exact bytes for binary-safe clients.
+
+`--legacy` permits old skill tags and derives missing names from titles; descriptions remain required. Use only for deliberate migration. JSON listings report rejected metadata. Fix rejected published rows before sync; they are never interpreted as permission to delete prior outputs.

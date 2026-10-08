@@ -2,7 +2,7 @@ import { parseWithGlobals } from "../client-factory.ts";
 import { err, jsonOutForArgs, table } from "../format.ts";
 
 const CAPABILITIES = [
-  { keys: ["skill library", "remote skill", "catalog", "skill export"], command: "craft lib list --collection <ID> --json", why: "discover published remote skills without body previews; fetch a match with lib get" },
+  { keys: ["skill library", "remote skill", "catalog", "skill export", "skill picker", "skill sync"], command: "craft lib list --collection <ID> --json", why: "discover metadata; lib pick selects with keywords or optional Jev; get/resource load packages; sync manages mirrors" },
   { keys: ["health", "doctor", "auth", "debug"], command: "craft doctor --json", why: "verify auth, API, source, local store" },
   { keys: ["source", "mode", "local", "api", "linux"], command: "craft source [auto|api|local]", why: "control local-first vs API reads" },
   { keys: ["search", "find", "grep"], command: "craft docs search <pattern>", why: "vault-wide document search" },

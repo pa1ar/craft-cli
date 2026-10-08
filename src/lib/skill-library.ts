@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import type { CraftClient } from "./client.ts";
 import type { Block, CollectionItem, ItemsResponse } from "./types.ts";
 
@@ -17,6 +16,7 @@ export interface LibraryRejected {
   id: string;
   title: string;
   reason: string;
+  status?: string;
 }
 
 export interface LibraryOptions {
@@ -45,7 +45,7 @@ type Row = CollectionItem & {
 
 const NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const DRAFT_STATUSES = new Set(["draft", "archived"]);
-const SUPPORTED_TEXT_TYPES = new Set(["text", "code", "line"]);
+const SUPPORTED_TEXT_TYPES = new Set(["text", "code", "line", "table", "richUrl"]);
 const UNSUPPORTED_TYPES = new Set([
   "image",
   "video",
@@ -54,8 +54,6 @@ const UNSUPPORTED_TYPES = new Set([
   "page",
   "whiteboard",
   "drawing",
-  "table",
-  "richUrl",
 ]);
 
 function property(row: Row, key: string): unknown {
@@ -102,7 +100,7 @@ function rowIdentity(row: Row): { id: string; title: string } {
 
 function reject(row: Row, reason: string): LibraryRejected {
   const identity = rowIdentity(row);
-  return { ...identity, reason };
+  return { ...identity, reason, status: stringValue(property(row, "status"))?.trim().toLowerCase() };
 }
 
 function candidate(row: Row, options: LibraryOptions): { entry?: LibraryEntry; rejected?: LibraryRejected } {
@@ -121,10 +119,13 @@ function candidate(row: Row, options: LibraryOptions): { entry?: LibraryEntry; r
 
   if (statusRaw === undefined || statusRaw === "") {
     if (!legacy) return { rejected: reject(row, "missing properties.status (expected published)") };
+  } else if (statusRaw !== "published" && !DRAFT_STATUSES.has(statusRaw)) {
+    return { rejected: reject(row, "invalid status; expected draft, published or archived") };
   } else if (statusRaw !== "published") {
     if (!(options.includeDrafts === true && DRAFT_STATUSES.has(statusRaw))) return {};
   }
 
+  if (!identity.id || !/^[a-z0-9-]+$/i.test(identity.id)) return { rejected: reject(row, "missing or invalid item ID") };
   const title = identity.title;
   const rawName = property(row, "name");
   if (rawName !== undefined && typeof rawName !== "string") {
@@ -165,10 +166,14 @@ export async function listLibrary(
 ): Promise<LibraryListResult> {
   // Depth zero is intentional: callers should never pay for content while listing.
   const response = await client.collections.getItems(collectionId, 0) as ItemsResponse<CollectionItem>;
-  if (!response || !Array.isArray(response.items)) {
+  if (!response || !Array.isArray(response.items) || (response as any).nextCursor || (response as any).hasMore) {
     throw new Error("invalid Craft collection items response: expected an items array");
   }
-  const rows = response.items as Row[];
+  return normalizeLibrary(response.items, options);
+}
+
+/** Apply the same contract to API rows and scoped snapshots. */
+export function normalizeLibrary(rows: unknown[], options: LibraryOptions = {}): LibraryListResult {
   const items: LibraryEntry[] = [];
   const rejected: LibraryRejected[] = [];
 
@@ -176,7 +181,7 @@ export async function listLibrary(
     if (!row || typeof row !== "object") {
       throw new Error("invalid Craft collection item: expected an object");
     }
-    const result = candidate(row, options);
+    const result = candidate(row as Row, options);
     if (result.entry) items.push(result.entry);
     if (result.rejected) rejected.push(result.rejected);
   }
@@ -198,16 +203,12 @@ export async function listLibrary(
         kept.push(item);
         continue;
       }
-      rejected.push({ id: item.id, title: item.title, reason: `duplicate skill name: ${item.name}` });
+      rejected.push({ id: item.id, title: item.title, reason: `duplicate skill name: ${item.name}`, status: item.status });
     }
     return { items: kept, rejected };
   }
 
   return { items, rejected };
-}
-
-function jsonYaml(value: unknown): string {
-  return JSON.stringify(value);
 }
 
 function maxBackticks(value: string): number {
@@ -216,13 +217,13 @@ function maxBackticks(value: string): number {
   return max;
 }
 
-function renderBlock(block: Block & Record<string, unknown>, path: string): string[] {
+export function renderLibraryBlock(block: Block & Record<string, unknown>, path: string): string[] {
   const type = typeof block.type === "string" ? block.type : "";
   if (UNSUPPORTED_TYPES.has(type)) {
-    throw new Error(`unsupported block type "${type}" at ${path}; skill exports support text and code blocks only`);
+    throw new Error(`unsupported block type "${type}" at ${path}; skill exports support text, code, separators and tables`);
   }
   if (!SUPPORTED_TEXT_TYPES.has(type)) {
-    throw new Error(`unsupported block type "${type || "unknown"}" at ${path}; skill exports support text and code blocks only`);
+    throw new Error(`unsupported block type "${type || "unknown"}" at ${path}; skill exports support text, code, separators and tables`);
   }
 
   let markdown: string;
@@ -233,6 +234,17 @@ function renderBlock(block: Block & Record<string, unknown>, path: string): stri
     markdown = `${fence}${language}\n${raw}\n${fence}`;
   } else if (type === "line") {
     markdown = "---";
+  } else if (type === "richUrl") {
+    const url = stringValue(block.url);
+    if (!url) throw new Error(`link card has no URL at ${path}`);
+    markdown = `[${stringValue(block.title) ?? url}](${url})`;
+  } else if (type === "table") {
+    if (typeof block.markdown === "string" && block.markdown.trim()) markdown = block.markdown;
+    else if (Array.isArray(block.rows) && block.rows.length) {
+      const rows = block.rows as any[][];
+      const row = (cells: any[]) => "| " + cells.map(c => String(c.value ?? "").replace(/\|/g, "\\|").replace(/\n/g, "<br>")).join(" | ") + " |";
+      markdown = [row(rows[0]!), row(rows[0]!.map(() => ({ value: "---" }))), ...rows.slice(1).map(row)].join("\n");
+    } else throw new Error(`table has no exportable cells at ${path}`);
   } else {
     // Keep Craft markdown extensions and literal XML untouched.
     markdown = stringValue(block.markdown) ?? "";
@@ -245,34 +257,10 @@ function renderBlock(block: Block & Record<string, unknown>, path: string): stri
       if (!child || typeof child !== "object") {
         throw new Error(`unsupported empty block at ${path}.content[${index}]`);
       }
-      parts.push(...renderBlock(child as Block & Record<string, unknown>, `${path}.content[${index}]`));
+      parts.push(...renderLibraryBlock(child as Block & Record<string, unknown>, `${path}.content[${index}]`));
     }
   }
   return parts;
-}
-
-function renderSkill(entry: LibraryEntry, root: Block): string {
-  const rootType = typeof (root as any).type === "string" ? (root as any).type : "";
-  if (rootType !== "collectionItem") {
-    throw new Error(`unsupported skill root type "${rootType || "unknown"}"; expected collectionItem`);
-  }
-  const content = Array.isArray(root.content) ? root.content : [];
-  const body: string[] = [];
-  for (let index = 0; index < content.length; index++) {
-    const child = content[index];
-    if (!child || typeof child !== "object") throw new Error(`unsupported empty block at content[${index}]`);
-    body.push(...renderBlock(child as Block & Record<string, unknown>, `content[${index}]`));
-  }
-  if (body.length === 0 || body.every((part) => part.trim() === "")) {
-    throw new Error(`skill ${entry.name} has no exportable text content`);
-  }
-  const frontmatter = [
-    "---",
-    `name: ${jsonYaml(entry.name)}`,
-    `description: ${jsonYaml(entry.description)}`,
-    "---",
-  ].join("\n");
-  return `${frontmatter}\n\n${body.join("\n\n")}${body.length ? "\n" : ""}`;
 }
 
 /** Resolve a catalog entry by exact id or name, then fetch only that block's body. */
@@ -283,14 +271,10 @@ export async function getLibrarySkill(
   options: LibraryOptions = {},
 ): Promise<LibrarySkillResult> {
   const catalog = await listLibrary(client, collectionId, options);
-  const entry = catalog.items.find((item) => item.id === reference || item.name === reference);
+  const entry = catalog.items.find((item) => item.id.toLowerCase() === reference.toLowerCase() || item.name === reference);
   if (!entry) throw new Error(`skill reference is not present in the validated library: ${reference}`);
 
-  const fetched = await client.blocks.get(entry.id, { maxDepth: -1, format: "json" });
-  if (!fetched || typeof fetched !== "object") {
-    throw new Error(`skill ${entry.name} did not return a structured block`);
-  }
-  const markdown = renderSkill(entry, fetched as Block);
-  const sha256 = createHash("sha256").update(markdown, "utf8").digest("hex");
-  return { entry, markdown, sha256 };
+  const { loadSkillPackage } = await import("./skill-packages.ts");
+  const result = await loadSkillPackage(client, entry, catalog.items, { bodyOnly: true });
+  return { entry, markdown: result.markdown, sha256: result.sha256 };
 }

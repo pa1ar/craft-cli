@@ -93,9 +93,9 @@ describe("skill library", () => {
     await expect(getLibrarySkill(client, "col", "arbitrary-id")).rejects.toThrow("validated library");
   });
 
-  test("rejects unsupported nested media/pages instead of dropping them", async () => {
-    const { client } = mockClient([valid()], { type: "collectionItem", content: [{ type: "image", url: "x" }] });
-    await expect(getLibrarySkill(client, "col", "a")).rejects.toThrow("unsupported block type \"image\"");
+  test("rejects unsupported drawing blocks instead of dropping them", async () => {
+    const { client } = mockClient([valid()], { type: "collectionItem", content: [{ type: "whiteboard" }] });
+    await expect(getLibrarySkill(client, "col", "a")).rejects.toThrow("unsupported block type \"whiteboard\"");
   });
 
   test("supports line separators and rejects an empty body", async () => {

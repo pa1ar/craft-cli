@@ -3,11 +3,14 @@ import { mkdtemp, readFile, rm, mkdir, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
+import { mkdtempSync } from "node:fs";
 
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => { for (const cleanup of cleanups.splice(0)) await cleanup(); });
 
 function fixture() {
+  const state = mkdtempSync(join(tmpdir(), "craft-library-state-"));
+  cleanups.push(() => rm(state, { recursive: true, force: true }));
   const calls: string[] = [];
   const authorizations: (string | null)[] = [];
   const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch(request) {
@@ -27,7 +30,7 @@ function fixture() {
   cleanups.push(async () => { server.stop(true); });
   async function run(args: string[]) {
     const process = Bun.spawn({ cmd: [Bun.which("bun")!, join(import.meta.dir, "../../src/cli/main.ts"), "lib", ...args, "--url", `http://127.0.0.1:${server.port}/api/v1`],
-      env: { ...globalThis.process.env, CRAFT_KEY: "unrelated-key-must-not-be-sent", CRAFT_SOURCE: "local" }, stdout: "pipe", stderr: "pipe" });
+      env: { ...globalThis.process.env, CRAFT_KEY: "unrelated-key-must-not-be-sent", CRAFT_SOURCE: "api", CRAFT_LIB_STATE: state }, stdout: "pipe", stderr: "pipe" });
     const [stdout, stderr, code] = await Promise.all([new Response(process.stdout).text(), new Response(process.stderr).text(), process.exited]);
     return { stdout, stderr, code };
   }
@@ -35,7 +38,7 @@ function fixture() {
 }
 
 describe("remote library CLI", () => {
-  test("lists compact API metadata even with a local source default and keeps credentials isolated", async () => {
+  test("lists compact API metadata and keeps credentials isolated", async () => {
     const f = fixture();
     const r = await f.run(["list", "--collection", "library", "--json"]);
     expect(r.code).toBe(0);
@@ -82,7 +85,7 @@ describe("remote library CLI", () => {
     expect(await readFile(report.path, "utf8")).toBe(body);
   });
 
-  test("requires explicit collection and refuses explicit local reads", async () => {
+  test("requires a binding or collection and reports a cold local snapshot", async () => {
     const f = fixture();
     expect((await f.run(["list"])).code).not.toBe(0);
     expect((await f.run(["list", "--collection", "library", "--source", "local"])).code).not.toBe(0);

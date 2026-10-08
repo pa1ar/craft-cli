@@ -38,3 +38,8 @@ export type {
   RemindersListResponse,
 } from "./reminders.ts";
 export { extractOutgoing, inferTitle } from "./links.ts";
+
+export { pickSkills, keywordSkills } from "./skill-picker.ts";
+export type { PickerResult, PickedSkill } from "./skill-picker.ts";
+export { loadSkillPackage } from "./skill-packages.ts";
+export type { SkillPackage } from "./skill-packages.ts";

@@ -421,12 +421,16 @@ MIT
 
 ## Skills from Craft collections
 
-`craft lib list --collection ID --json` discovers published skills by metadata without body previews. `craft lib get NAME --collection ID` reads a selected skill. `craft lib export NAME --collection ID --out DIR` creates a portable single-file `SKILL.md` and refuses existing destinations. These commands use the API and leave Craft content and structure unchanged. Export is optional, not a synchronized mirror or automatic installation.
+Choose a Craft document as the canonical skills library with `craft lib setup --document ID --collection ID`. It holds a skills collection and optional guide. `craft lib pick "request" --published --max-output 5 --json` selects skills using keywords, or optional `--jev`. Load only selected bodies and resources.
 
-See [the collection contract](docs/skill-library.md) for authoring, connection setup and current single-file limitations.
+Scoped snapshots provide API/local parity and offline reads after `lib refresh`. Export full folders with references, scripts and assets. Optional `lib sync --out ~/dev/generated-skills` manages a downstream folder; GitHub delivery can use a pull request or direct commit to an explicit target. Codex and Claude Code prompt-hook adapters share the picker.
+
+See [the collection and sync contract](docs/skill-library.md) for setup, authoring, source modes, ownership and hook configuration.
 
 ## Read performance and design
 
 Aim for common local actions under 100 ms. Paired warm-cache measurements on one Mac put full Markdown reads at 58–86 ms; plain file reads remain around 3–4 ms. This is a target, not a guarantee for API calls, cold caches, or every document.
 
-Craft owns its cache and document structures. The CLI reads that cache as-is, creates no second content store, and uses API fallback when content is unavailable. Desktop sync can lag after writes; request `--source api` for immediate remote confirmation. [Measurements and method](docs/plans/completed/2026-09-19-cache-native-read-speed.md).
+Craft owns its cache and document structures. The CLI reads that cache as-is, uses API fallback when content is unavailable. Desktop sync can lag after writes; request `--source api` for immediate remote confirmation. [Measurements and method](docs/plans/completed/2026-09-19-cache-native-read-speed.md).
+
+Canonical skill libraries additionally use scoped snapshots and explicit downstream mirrors, as described above.
