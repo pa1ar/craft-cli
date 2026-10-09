@@ -8,6 +8,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-09
+
 ### Added
 - `blocks mermaid` inserts native rendered diagrams from inline source, a file or stdin; command discovery and agent skills explain Mermaid rendering and payloads.
 
@@ -121,7 +123,8 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/pa1ar/craft-cli/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/pa1ar/craft-cli/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/pa1ar/craft-cli/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/pa1ar/craft-cli/compare/v0.6.2...v0.7.0
