@@ -8,6 +8,9 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Added
+- `blocks mermaid` inserts native rendered diagrams from inline source, a file or stdin; command discovery and agent skills explain Mermaid rendering and payloads.
+
 ## [0.9.0] - 2026-10-08
 
 ### Added

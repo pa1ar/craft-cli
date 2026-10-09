@@ -42,6 +42,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
         "experimental block reminder list/create/reschedule/complete/reopen/delete",
         "page styling and separator block fields",
         "typed media upload, local resolution, analysis, and safe replacement",
+        "native Mermaid code blocks rendered as diagrams inside Craft documents",
       ],
       appOnlyWithoutDocumentedRest: [
         "editable inline tags",
@@ -70,6 +71,7 @@ export async function runAgentContext(argv: string[]): Promise<void> {
       { command: "read", use: "alias for docs get; use --outline or --lines A:B to read only the needed output" },
       { command: "docs daily", use: "read a daily note as markdown (local-first)" },
       { command: "blocks append", use: "append markdown to a document or daily note" },
+      { command: "blocks mermaid", use: "insert a rendered Mermaid diagram from --code, --file or stdin with -; native type code, language mermaid, rawCode source" },
       { command: "patch", use: "find and replace one matching block" },
       { command: "tasks", use: "list all space tasks; filter by state, document, date, repeat, or reminder" },
       { command: "tasks add", use: "create task in inbox, daily note, or document" },

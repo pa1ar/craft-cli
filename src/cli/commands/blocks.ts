@@ -20,6 +20,8 @@ export async function runBlocks(argv: string[]) {
       links: { type: "boolean" },
       exhaustive: { type: "boolean" },
       markdown: { type: "string" },
+      code: { type: "string" },
+      help: { type: "boolean", alias: "h" },
       file: { type: "string" },
       font: { type: "string" },
       date: { type: "string" },
@@ -37,6 +39,21 @@ export async function runBlocks(argv: string[]) {
       budget: { type: "number" },
     },
   });
+
+  if (sub === "mermaid" && (args.flags.help || rest.length === 0)) {
+    console.log(`craft blocks mermaid <pageId>|--date DATE (--code STR | --file diagram.mmd | -)
+
+Craft renders Mermaid code blocks as diagrams inside the document.
+Pass bare Mermaid source, without Markdown fences. The API returns the source;
+the Craft app renders it. The CLI does not validate Mermaid syntax.
+
+  --position start|end   placement within the page (default end)
+  --dry-run --json       preview the native code block without writing
+
+Example: craft blocks mermaid PAGE_ID --code "flowchart LR; Visitor --> App; App --> Database"
+Typed equivalent: {"type":"code","language":"mermaid","rawCode":"flowchart LR; Visitor --> App"}`);
+    return;
+  }
 
   const shapingRequested = args.flags.lines !== undefined || args.flags.head !== undefined
     || args.flags.outline === true || args.flags.budget !== undefined;
@@ -138,18 +155,25 @@ export async function runBlocks(argv: string[]) {
       return;
     }
 
+    case "mermaid":
     case "insert": {
       const target = args.positional[0];
       const position = buildTarget(target, args.flags);
-      if (!args.flags.file && !args.positional.includes("-")) {
+      const isMermaid = sub === "mermaid";
+      const inputs = [args.flags.code !== undefined, args.flags.file !== undefined, args.positional.includes("-")];
+      if (isMermaid && inputs.filter(Boolean).length !== 1) {
+        throw new Error("usage: craft blocks mermaid <parentId>|--date DATE (--code STR | --file diagram.mmd | -); Craft renders this as a diagram");
+      }
+      if (!isMermaid && !args.flags.file && !args.positional.includes("-")) {
         throw new Error("usage: craft blocks insert <parentId>|--date DATE --file blocks.json (or pipe to stdin with -)");
       }
-      const text = args.flags.file
+      const text = isMermaid && args.flags.code !== undefined ? String(args.flags.code) : args.flags.file
         ? await Bun.file(args.flags.file as string).text()
         : await readStdin();
-      const blocks = JSON.parse(text);
+      if (isMermaid && !text.trim()) throw new Error("Mermaid source must not be empty");
+      const blocks = isMermaid ? [{ type: "code", language: "mermaid", rawCode: text }] : JSON.parse(text);
       if (args.flags["dry-run"]) {
-        const preview = { op: "blocks.insert", position, blocks: Array.isArray(blocks) ? blocks : blocks.blocks };
+        const preview = { op: `blocks.${sub}`, position, blocks: Array.isArray(blocks) ? blocks : blocks.blocks };
         console.log(args.flags.json ? jsonOutForArgs(preview, args.flags) : `dry-run: would insert ${(preview.blocks ?? []).length} blocks`);
         return;
       }
@@ -169,7 +193,7 @@ export async function runBlocks(argv: string[]) {
       } catch (e) {
         console.error(dim(`journal warning: ${(e as Error).message}`));
       }
-      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : `inserted ${res.items.length} blocks`);
+      console.log(args.flags.json ? jsonOutForArgs(res, args.flags) : isMermaid ? "inserted Mermaid diagram (renders in Craft)" : `inserted ${res.items.length} blocks`);
       return;
     }
 

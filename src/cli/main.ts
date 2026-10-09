@@ -72,6 +72,8 @@ Write
   docs rm <id>...                                (soft-delete → trash)
   blocks append <docId|--date DATE> --markdown STR   (or --file F | -)
   blocks insert <parentId|--date DATE> --file FILE   (typed block JSON; pass live r.craft.do URLs, API re-signs them)
+  blocks mermaid <parentId|--date DATE> --file diagram.mmd (or --code STR | -)
+    native Mermaid code block, rendered as a diagram in Craft; --position start|end
   blocks update <id> --markdown STR
   blocks rm <id>...
   patch <docId> --old STR --new STR       find and replace in blocks (or pipe old\\n---\\nnew)

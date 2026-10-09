@@ -135,6 +135,7 @@ craft blocks search <doc> "re"   search within a document
 craft blocks append <doc> --markdown "text"
 craft blocks append --date today --markdown "text"
 craft blocks insert / update / mv / rm
+craft blocks mermaid <doc> --file diagram.mmd # rendered diagram in Craft
 
 craft tasks                       all tasks across the space
 craft tasks ls [scope]            optional API scope: inbox/active/upcoming/logbook/document
@@ -175,6 +176,24 @@ craft media replace <blockId> <file>  upload, verify, and replace media
 ```
 
 Global flags: `--json`, `--select id,title`, `--profile NAME`, `--quiet`, `--depth N`, `--no-links`, `--source auto|api|local`, `--api`, `--dry-run` on writes.
+
+### Mermaid diagrams
+
+Craft natively renders Mermaid code blocks as diagrams inside documents. The API stores and returns the source; the Craft app renders it.
+
+```sh
+craft blocks mermaid PAGE_ID --file diagram.mmd --position start
+craft blocks mermaid PAGE_ID --code "flowchart LR; Visitor --> App; App --> Database"
+cat diagram.mmd | craft blocks mermaid PAGE_ID -
+```
+
+Pass bare Mermaid source without Markdown fences. `--date DATE` targets a daily note, `--dry-run --json` previews the payload, and `craft undo PAGE_ID` can undo the insert. Syntax is rendered and checked by Craft, not by the CLI.
+
+The equivalent structured block for `craft blocks insert PAGE_ID --file blocks.json` is:
+
+```json
+[{"type":"code","language":"mermaid","rawCode":"flowchart LR\n  Visitor --> App\n  App --> Database"}]
+```
 
 ### Agent read routing
 

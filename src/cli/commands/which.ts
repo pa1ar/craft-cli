@@ -10,6 +10,7 @@ const CAPABILITIES = [
   { keys: ["outline", "heading", "range", "lines", "budget"], command: "craft read <id> --outline", why: "find heading line numbers, then read --lines A:B; cap output with --budget N" },
   { keys: ["daily", "today", "journal"], command: "craft docs daily [date]", why: "fetch daily note" },
   { keys: ["append", "write", "markdown"], command: "craft blocks append <docId|--date DATE> --markdown STR", why: "append markdown content" },
+  { keys: ["mermaid", "diagram", "flowchart", "architecture"], command: "craft blocks mermaid <docId|--date DATE> --file diagram.mmd", why: "insert a native Mermaid code block; Craft renders it as a diagram (also --code STR or stdin with -)" },
   { keys: ["edit", "replace", "patch"], command: "craft patch <docId> --old STR --new STR", why: "surgical block edit" },
   { keys: ["task", "tasks", "todo", "find task", "deadline", "overdue"], command: "craft tasks --state todo --json", why: "list and filter all tasks across the space" },
   { keys: ["add task", "create task", "task inbox"], command: "craft tasks add <markdown> --to inbox|daily|doc", why: "create task" },

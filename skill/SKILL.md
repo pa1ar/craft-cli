@@ -85,6 +85,8 @@ craft blocks append <docId> --markdown "text"
 craft blocks append --date today --markdown "daily note line"
 echo "## piped content" | craft blocks append <docId> -
 craft blocks insert <docId> --file blocks.json   # typed blocks JSON; r.craft.do URLs must be fresh (signed URLs rotate)
+craft blocks mermaid <docId> --file diagram.mmd # native diagram rendered in Craft (0.10.0+)
+craft blocks mermaid <docId> --code "flowchart LR; Visitor --> App; App --> Database"
 craft blocks update <blockId> --markdown "new text"
 craft blocks mv <blockId>... --to <pageId>
 craft blocks rm <blockId>...
@@ -422,6 +424,28 @@ craft undo --dry-run        # see what would happen first
 ```sh
 craft cat <id1> <id2> <id3>
 ```
+
+## Mermaid diagrams
+
+Craft natively renders Mermaid code blocks as diagrams inside documents. Use them for simple architecture, flowcharts and sequences, including diagrams the user wants to screenshot. The API returns the source; the Craft app renders it. A separate image renderer is optional.
+
+```sh
+craft which mermaid
+craft blocks mermaid PAGE_ID --file diagram.mmd --position start
+craft blocks mermaid PAGE_ID --code "flowchart LR; Visitor --> App; App --> Database"
+cat diagram.mmd | craft blocks mermaid PAGE_ID -
+craft blocks mermaid PAGE_ID --file diagram.mmd --dry-run --json
+```
+
+`blocks mermaid` requires craft-cli 0.10.0+. Pass bare Mermaid source without Markdown fences. It inserts one native code block, records the mutation for `undo`, and does not validate Mermaid syntax. An explicit page or `--date DATE` is required. `--position start|end` defaults to `end`.
+
+The typed equivalent also works with `craft blocks insert PAGE_ID --file blocks.json`:
+
+```json
+[{"type":"code","language":"mermaid","rawCode":"flowchart LR\n  Visitor --> App\n  App --> Database"}]
+```
+
+Read back with `craft blocks get BLOCK_ID --json` and check `type`, `language`, and `rawCode`. Check rendering in Craft when visual QA or a screenshot is requested. Keep simple diagrams compact: `LR` for horizontal flow, `TB` for vertical flow. Canonical formatting guidance: [craft-expert](craftdocs://open?spaceId=8ac88104-eb82-9c72-9014-d28fdea88b25&blockId=5e211285-4a85-de94-6f66-4080473918d9).
 
 ## Caveats (from real trials — see the source checkout's trial `CAVEATS.md` when available)
 
