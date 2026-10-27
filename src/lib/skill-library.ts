@@ -10,6 +10,10 @@ export interface LibraryEntry {
   description: string;
   tags: string[];
   status: string;
+  /** Where the skill is edited: "craft" (also when unset) or "github". Present only when the row sets it. */
+  canonical?: "craft" | "github";
+  /** Canonical location URL; required for github-owned rows. */
+  source?: string;
 }
 
 export interface LibraryRejected {
@@ -146,6 +150,16 @@ function candidate(row: Row, options: LibraryOptions): { entry?: LibraryEntry; r
   if (!description) return { rejected: reject(row, "missing description") };
   if (description.length > 1024) return { rejected: reject(row, "description exceeds 1024 characters") };
 
+  const canonicalRaw = stringValue(property(row, "canonical"))?.trim().toLowerCase();
+  if (canonicalRaw && canonicalRaw !== "craft" && canonicalRaw !== "github") {
+    return { rejected: reject(row, "invalid canonical; expected craft or github") };
+  }
+  const canonical = canonicalRaw === "craft" || canonicalRaw === "github" ? canonicalRaw : undefined;
+  const source = stringValue(property(row, "source"))?.trim() || undefined;
+  if (canonical === "github" && !source) {
+    return { rejected: reject(row, "github-owned skill needs a source URL (the repo folder)") };
+  }
+
   return {
     entry: {
       id: identity.id,
@@ -154,6 +168,8 @@ function candidate(row: Row, options: LibraryOptions): { entry?: LibraryEntry; r
       description,
       tags,
       status: statusRaw || "legacy",
+      ...(canonical ? { canonical } : {}),
+      ...(canonical === "github" && source ? { source } : {}),
     },
   };
 }

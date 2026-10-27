@@ -54,6 +54,7 @@ Its key alone never enables it. --fallback explicitly permits labeled keyword fa
 command. References load with resource (JSON base64 for binary). No code is executed.
 
 sync owns only files recorded in .craft-skills.json; local edits cause a conflict.
+sync mirrors only craft-owned rows (canonical craft or unset). canonical github rows are pointers: source holds the repo folder URL.
 Local destination and GitHub target are independent. GitHub uses gh auth (contents
 write, plus pull_requests write for pr mode); default pr, direct must be configured.
 No-op sync creates no files or commit. Local replaced folders have recovery archives.
@@ -167,7 +168,9 @@ async function runLibInternal(argv: string[]): Promise<void> {
     const out = args.flags.out ? resolve(args.flags.out) : binding?.out;
     const github = target(args.flags, binding);
     if (!out && !github) throw new Error("sync requires --out DIR or a configured GitHub target");
-    const packages = []; for (const e of catalog.items) packages.push(await store.skill(e.id));
+    // Only craft-owned rows are mirrored. GitHub-owned rows are pointers; the repo copy is edited at its source.
+    const owned = catalog.items.filter(e => e.canonical !== "github");
+    const packages = []; for (const e of owned) packages.push(await store.skill(e.id));
     const generated = generation(packages, hash(JSON.stringify([client.url, collection.toLowerCase()])));
     const result: any = { revision: hash(JSON.stringify(generated.manifest)), local: null, github: null };
     // Independent targets: each reports success; a failed second target retains retryable state.
@@ -212,7 +215,12 @@ async function runLibInternal(argv: string[]): Promise<void> {
   }
   const entry = catalog.items.find(e => e.id.toLowerCase() === reference!.toLowerCase() || e.name === reference);
   if (!entry) throw new Error(`skill reference is not present in the validated library: ${reference}`);
-  if (command === "get") { const body = await store.body(entry.id); if (args.flags.json) output({ ...body, provenance: store.provenance }); else console.log(body.markdown); return; }
+  if (command === "get") {
+    const body = await store.body(entry.id);
+    if (entry.canonical === "github" && !args.flags.json) console.error(`github-owned skill: edit at ${entry.source}, then sync; do not edit this Craft row`);
+    if (args.flags.json) output({ ...body, canonical: entry.canonical, source: entry.source, provenance: store.provenance }); else console.log(body.markdown);
+    return;
+  }
   if (command === "resource") {
     if (!path) throw new Error("resource requires a relative path"); resourcePath(path);
     const bytes = await store.resource(entry.id, path);
