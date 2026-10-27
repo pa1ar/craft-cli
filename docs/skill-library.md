@@ -50,6 +50,15 @@ craft lib sync --json
 
 GitHub uses authenticated `gh`, with contents write and pull-request write for PR mode. Target repo, branch, folder and publication mode are explicit. PR is the default; `--publish direct` commits to the configured branch. Git Data API creates one atomic commit and rejects concurrent branch advances. Unrelated files are preserved. GitHub works without a permanent local folder. If both targets are set, each publication is a separate transaction; a failed second target can be retried. No schedule is installed. A scheduler can invoke the same command.
 
+## Per-skill ownership
+
+An optional `canonical` single-select (`craft` or `github`) says where a skill is edited. Unset counts as `craft`.
+
+- **craft:** the row holds the full skill. Edit it in Craft, then `lib sync` mirrors it to the folder or GitHub repo.
+- **github:** the row is a pointer so every agent can find the skill with `pick`. `source` must hold the repo folder URL (a published row without it is rejected). Edit the skill in the repo. `lib sync` never mirrors these rows, so they cannot collide with the repo copy.
+- The first GitHub sync into a repo that already holds these skill files stops with `unmanaged file would be overwritten`. Review the dry run, then pass `--adopt` once; the files become managed and later syncs detect outside edits as usual.
+- `list`, `pick` and `get --json` return `canonical` and `source` when the row sets them. `get` in text mode prints a one-line stderr note for github-owned rows.
+
 ## Harness hooks
 
 ```sh

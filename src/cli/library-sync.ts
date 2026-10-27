@@ -20,11 +20,11 @@ function parseManifest(text: string | undefined, source: string): Manifest | und
   for (const [path, digest] of Object.entries(value.files)) { resourcePath(path); if (typeof digest !== "string" || !/^[0-9a-f]{64}$/.test(digest)) throw new Error("invalid mirror manifest"); }
   return value;
 }
-function changes(next: Generation, previous: Manifest | undefined, actual: Record<string, string>): string[] {
+function changes(next: Generation, previous: Manifest | undefined, actual: Record<string, string>, adopt = false): string[] {
   for (const [path, digest] of Object.entries(previous?.files ?? {})) {
     if (actual[path] === undefined || hash(Buffer.from(actual[path], "base64")) !== digest) throw new Error(`managed file changed outside Craft: ${path}`);
   }
-  for (const path of Object.keys(next.files)) if (actual[path] !== undefined && previous?.files[path] === undefined) throw new Error(`unmanaged file would be overwritten: ${path}`);
+  if (!adopt) for (const path of Object.keys(next.files)) if (actual[path] !== undefined && previous?.files[path] === undefined) throw new Error(`unmanaged file would be overwritten: ${path} (first sync into an existing repo: review, then pass --adopt)`);
   return [...new Set([...Object.keys(next.files), ...Object.keys(previous?.files ?? {})])].filter(path => actual[path] !== next.files[path]).sort();
 }
 async function noSymlinks(path: string): Promise<void> {
@@ -93,7 +93,7 @@ async function gh(args: string[], body?: unknown): Promise<any> {
   if (exit) throw new Error(`GitHub operation failed: ${stderr.trim()}`);
   return stdout.trim() ? JSON.parse(stdout) : undefined;
 }
-export async function syncGitHub(next: Generation, target: NonNullable<LibraryBinding["github"]>, dryRun = false) {
+export async function syncGitHub(next: Generation, target: NonNullable<LibraryBinding["github"]>, dryRun = false, adopt = false) {
   if (!/^[\w.-]+\/[\w.-]+$/.test(target.repo)) throw new Error("--github expects OWNER/REPO");
   const prefix = target.path ? resourcePath(target.path).replace(/\/$/, "") + "/" : "";
   const base = `/repos/${target.repo}`;
@@ -142,7 +142,7 @@ export async function syncGitHub(next: Generation, target: NonNullable<LibraryBi
   const previous = parseManifest(text, next.manifest.source);
   const actual: Record<string, string> = {};
   for (const path of new Set([...Object.keys(next.files), ...Object.keys(previous?.files ?? {})])) { const bytes = await read(path); if (bytes !== undefined) actual[path] = bytes; }
-  const changed = changes(next, previous, actual);
+  const changed = changes(next, previous, actual, adopt);
   const manifestChanged = text !== JSON.stringify(next.manifest);
   if (dryRun || (!changed.length && !manifestChanged)) return { repo: target.repo, branch, changed, dryRun, published: false, pullRequest: !dryRun && exists ? await ensurePR() : activePR?.html_url };
   const updates: any[] = [];

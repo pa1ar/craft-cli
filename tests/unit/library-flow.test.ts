@@ -20,6 +20,7 @@ test("canonical library: bind, picker, offline packages, mirrors, drift and fail
     if (url.pathname.endsWith("/collections/col/items")) return Response.json({ items: [
       { id: "one", title: "Invoice", properties: { kind: "skill", name, status, description: "Use to prepare monthly invoices and billing statements.", tags: ["finance"] } },
       { id: "two", title: "Draft", properties: { kind: "skill", name: "draft-only", status: "draft", description: "Use for experimental billing" } },
+      { id: "gh", title: "Repo skill", properties: { kind: "skill", name: "repo-skill", status: "published", canonical: "github", source: "https://github.com/pa1ar/skills/tree/main/repo-skill", description: "Pointer to a skill edited in the GitHub repo." } },
       ...(bad ? [{ id: "bad", properties: { kind: "skill", status: "published", name: "INVALID", description: "bad" } }] : []),
     ] });
     if (url.pathname.endsWith("/collections/resources/items")) return Response.json({ items: [ { id: "script", title: "scripts/check.sh", properties: { path: "scripts/check.sh", kind: "script" } } ] });
@@ -35,6 +36,7 @@ test("canonical library: bind, picker, offline packages, mirrors, drift and fail
         { id: "resources", type: "collection", name: "Resources" },
       ] });
       if (id === "two") return Response.json({ id, type: "collectionItem", content: [{ type:"text", markdown:"Draft guidance" }] });
+      if (id === "gh") return Response.json({ id, type: "collectionItem", content: [{ type:"text", markdown:"Canonical copy lives on GitHub." }] });
     }
     return new Response("unknown route", { status: 404 });
   } });
@@ -74,7 +76,10 @@ test("canonical library: bind, picker, offline packages, mirrors, drift and fail
     const hookClaude = ok(await run(["hook","--harness","claude"],JSON.stringify({prompt:"monthly invoices"}))); expect(hookClaude).toEqual(hook);
     const deferred = ok(await run(["pick","invoices","--published","--content","--budget","0","--json"])); expect(deferred.items[0].contentDeferred).toBe(true); expect(deferred.items[0].markdown).toBeUndefined();
     const out=join(root,"export"); ok(await run(["export","invoice","--out",out,"--json"])); expect(await readFile(join(out,"invoice/scripts/check.sh"),"utf8")).toContain("#!/bin/sh"); expect((await run(["export","invoice","--out",out])).code).not.toBe(0);
+    const ghEntry=ok(await run(["list","--json"])).items.find((e:any)=>e.name==="repo-skill"); expect(ghEntry.canonical).toBe("github"); expect(ghEntry.source).toContain("github.com/pa1ar/skills");
+    expect(ok(await run(["get","repo-skill","--json"])).source).toBe(ghEntry.source);
     const sync=ok(await run(["sync","--json"])); expect(sync.local.written).toBe(true);
+    expect(await Bun.file(join(root,"mirror/repo-skill/SKILL.md")).exists()).toBe(false); expect(await Bun.file(join(root,"mirror/invoice/SKILL.md")).exists()).toBe(true);
     const manifestPath=join(root,"mirror/.craft-skills.json"); const firstStat=await stat(manifestPath);
     const again=ok(await run(["sync","--json"])); expect(again.local.written).toBe(false); expect((await stat(manifestPath)).mtimeMs).toBe(firstStat.mtimeMs);
     await mkdir(join(root,"mirror/manual")); await writeFile(join(root,"mirror/manual/keep.md"),"manual");

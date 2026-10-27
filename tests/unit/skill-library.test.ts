@@ -52,6 +52,24 @@ describe("skill library", () => {
     expect(result.rejected).toEqual([]);
   });
 
+  test("reads canonical ownership: github rows need a source, unknown values are rejected", async () => {
+    const { client } = mockClient([
+      valid({ properties: { ...valid().properties, canonical: "craft", source: "https://example.com/adapted-from" } }),
+      valid({ id: "g", title: "Repo", properties: { ...valid().properties, name: "repo-skill", canonical: "github", source: "https://github.com/pa1ar/skills/tree/main/repo-skill" } }),
+      valid({ id: "nosrc", title: "NoSrc", properties: { ...valid().properties, name: "no-source", canonical: "github" } }),
+      valid({ id: "odd", title: "Odd", properties: { ...valid().properties, name: "odd-owner", canonical: "elsewhere" } }),
+    ]);
+    const result = await listLibrary(client, "col");
+    expect(result.items.map((x) => [x.name, x.canonical, x.source])).toEqual([
+      ["build-api", "craft", undefined],
+      ["repo-skill", "github", "https://github.com/pa1ar/skills/tree/main/repo-skill"],
+    ]);
+    expect(result.rejected.map((x) => [x.id, x.reason])).toEqual([
+      ["nosrc", "github-owned skill needs a source URL (the repo folder)"],
+      ["odd", "invalid canonical; expected craft or github"],
+    ]);
+  });
+
   test("reports invalid eligible skills and removes every duplicate", async () => {
     const { client } = mockClient([
       valid(),
