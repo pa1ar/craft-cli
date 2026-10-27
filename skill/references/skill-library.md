@@ -56,6 +56,7 @@ An optional `canonical` single-select (`craft` or `github`) says where a skill i
 
 - **craft:** the row holds the full skill. Edit it in Craft, then `lib sync` mirrors it to the folder or GitHub repo.
 - **github:** the row is a pointer so every agent can find the skill with `pick`. `source` must hold the repo folder URL (a published row without it is rejected). Edit the skill in the repo. `lib sync` never mirrors these rows, so they cannot collide with the repo copy.
+- The first GitHub sync into a repo that already holds these skill files stops with `unmanaged file would be overwritten`. Review the dry run, then pass `--adopt` once; the files become managed and later syncs detect outside edits as usual.
 - `list`, `pick` and `get --json` return `canonical` and `source` when the row sets them. `get` in text mode prints a one-line stderr note for github-owned rows.
 
 ## Harness hooks

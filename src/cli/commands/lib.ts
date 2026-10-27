@@ -54,6 +54,7 @@ Its key alone never enables it. --fallback explicitly permits labeled keyword fa
 command. References load with resource (JSON base64 for binary). No code is executed.
 
 sync owns only files recorded in .craft-skills.json; local edits cause a conflict.
+--adopt (GitHub only) lets the first sync overwrite existing files at generated paths; they become managed. Review the PR diff.
 sync mirrors only craft-owned rows (canonical craft or unset). canonical github rows are pointers: source holds the repo folder URL.
 Local destination and GitHub target are independent. GitHub uses gh auth (contents
 write, plus pull_requests write for pr mode); default pr, direct must be configured.
@@ -88,7 +89,7 @@ async function runLibInternal(argv: string[]): Promise<void> {
     collection: { type: "string" }, document: { type: "string" }, guide: { type: "string" }, url: { type: "string" }, out: { type: "string" },
     github: { type: "string" }, branch: { type: "string" }, "repo-path": { type: "string" }, publish: { type: "string" },
     harness: { type: "string" }, create: { type: "boolean" }, legacy: { type: "boolean" }, "include-drafts": { type: "boolean" },
-    published: { type: "boolean" }, jev: { type: "boolean" }, fallback: { type: "boolean" }, content: { type: "boolean" },
+    published: { type: "boolean" }, adopt: { type: "boolean" }, jev: { type: "boolean" }, fallback: { type: "boolean" }, content: { type: "boolean" },
     "max-output": { type: "number" }, budget: { type: "number" }, "max-age": { type: "number" }, help: { type: "boolean", alias: "h" },
   } });
   if (args.flags.help || !argv.length) { console.log(HELP); return; }
@@ -175,7 +176,7 @@ async function runLibInternal(argv: string[]): Promise<void> {
     const result: any = { revision: hash(JSON.stringify(generated.manifest)), local: null, github: null };
     // Independent targets: each reports success; a failed second target retains retryable state.
     if (out) result.local = await syncLocal(generated, out, Boolean(args.flags["dry-run"]));
-    if (github) result.github = await syncGitHub(generated, github, Boolean(args.flags["dry-run"]));
+    if (github) result.github = await syncGitHub(generated, github, Boolean(args.flags["dry-run"]), Boolean(args.flags.adopt));
     output(result); return;
   }
   if (command === "pick" || command === "hook") {
