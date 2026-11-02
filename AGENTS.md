@@ -11,7 +11,7 @@ graph LR
     B -->|lib exports| C[Raycast craft extension]
 ```
 
-- source of truth: Craft's OpenAPI spec at `~/dev/craft-docs/craft-do-api/craft-do-openapi.json`
+- source of truth: Craft's OpenAPI spec, served live at `<api-url>/openapi.json` (needs the Bearer key). The old local copy under `~/dev/craft-docs/` is gone
 - craft-cli (`~/dev/tools/craft-cli/`) - wraps raw API, handles caveats
 - raycast extension (`~/dev/raycast/craft/`) - imports `@1ar/craft-cli/lib`, never calls API directly
 - when Craft changes endpoints: update cli first, then raycast follows
@@ -37,8 +37,8 @@ graph LR
 - `listDocs()` filters out pseudo-docs (block_taskInbox, block_taskLogbook) via UUID regex
 - journal auto-prunes entries older than 7 days (~1/20 chance per record call)
 - undo selector skips undo entries and already-undone mutations to find the right target
-- API caveats tracked at `~/dev/craft-docs/craft-do-api/trials/CAVEATS.md` - read before assuming API behavior
-- backlinks: not a real API feature. faked via title-based search + `block://` URI filtering. fragile by design
+- API caveats: read the live spec descriptions and `docs/` research notes before assuming API behavior
+- links: native via experimental `GET /internal-links` (`src/lib/links.ts`). ids must be document roots; card/block ids are mapped to their document via local SQLite (`documentRootOf`), else `--doc`/`--scan`. the old title-search backlinks stay as `--legacy` and auto-fallback when the endpoint is unavailable
 - `blocks insert` requires explicit target - the API silently routes orphan inserts to daily note, cli rejects that
 - search defaults to `regexps` mode (RE2). `include` mode silently drops underscored tokens. local FTS5 uses unicode61 tokenizer
 - exit codes: 0 ok, 1 user error, 2 api error, 3 auth, 4 not found
@@ -79,7 +79,7 @@ This repo is set up to be vendor-ready (npm-publishable) but Bun-first. Keep it 
   4. `git tag -a vX.Y.Z -m "X.Y.Z"`.
   5. `git push origin main --follow-tags`.
   6. `gh release create vX.Y.Z --notes "$(awk '/^## \[X.Y.Z\]/,/^## \[/{if(!/^## \[/ || /^## \[X.Y.Z\]/)print}' CHANGELOG.md)"` (or paste the relevant changelog section by hand).
-- After every release: ship a matching `/updates/craft-cli-X.Y.Z.md` entry on `~/dev/1ar/1ar-astro` (kind: `update`) linking to `/projects/craft-cli` and the GitHub release. The update post is the public-facing changelog item.
+- After every release: ship a matching `/updates/craft-cli-X.Y.Z.md` entry on `~/dev/1ar.io` (kind: `update`) linking to `/projects/craft-cli` and the GitHub release. The update post is the public-facing changelog item.
 
 ### Issues and PRs
 - Read incoming issues weekly. Triage labels we use (create as needed): `bug`, `enhancement`, `docs`, `wontfix`, `good-first-issue`.
@@ -87,8 +87,8 @@ This repo is set up to be vendor-ready (npm-publishable) but Bun-first. Keep it 
 - Don't gate on style; gate on correctness and on whether `skill/SKILL.md` still reflects the CLI after the change.
 
 ### Sync with 1ar.io
-- The "For AI agents" code block in `README.md` is mirrored in `~/dev/1ar/1ar-astro/src/pages/projects/craft-cli.astro`. The two must stay byte-identical. Any edit to the README block requires a matching edit on the website (and vice versa) - flag in the commit message.
-- `1ar-astro/CLAUDE.md` carries the same rule from the website side.
+- The "For AI agents" code block in `README.md` is mirrored in `~/dev/1ar.io/src/pages/projects/craft-cli.astro`. The two must stay byte-identical. Any edit to the README block requires a matching edit on the website (and vice versa) - flag in the commit message.
+- `~/dev/1ar.io/docs/standards/repository-reference.md` carries the same rule from the website side.
 
 ### Distribution stance
 - Personal tool, published as-is. We are not vendoring to npm yet, but the repo is kept in shape that we could (`name`, `version`, `bin`, `exports`, `license` would be the missing pieces - LICENSE file is currently absent, flag if/when we publish).
