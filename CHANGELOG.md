@@ -8,6 +8,8 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-02
+
 ### Added
 - `craft links map` exposes Craft's `/internal-links` directly: whole-space pairs, `--from`/`--to` documents, `--from-date`/`--to-date` daily notes, `--level block`, cursor paging or `--all`.
 - `client.links.page/all/findRoot` and native `backlinks`/`outgoing` returning `/internal-links` items with titles; `LinkScopeError` when a card or block can't be mapped to its document.
@@ -131,7 +133,8 @@ Baseline public release.
 - Agent skill bundle at `skill/SKILL.md`; `install.sh` symlinks to `~/.claude/skills/craft-cli` when present.
 - Demo GIF in README.
 
-[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/pa1ar/craft-cli/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/pa1ar/craft-cli/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/pa1ar/craft-cli/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/pa1ar/craft-cli/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/pa1ar/craft-cli/compare/v0.7.0...v0.8.0

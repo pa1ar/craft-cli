@@ -152,7 +152,7 @@ craft col views rm <collectionId> <viewId>
 # links (outgoing + backlinks)
 # Craft's native /internal-links (experimental). document level = pairs with
 # titles + referenceCount; --level block = exact source/target block ids.
-craft links out <id>                  # documents this doc (or card/block) references
+craft links out <id>                  # documents this doc (or card/block) references (0.11.0+)
 craft links in  <id>                  # where it is referenced (backlinks)
 craft links in  <id> --level block    # exact referencing blocks
 craft links in  <cardId> --doc <rootId>  # card/block id without local cache: name its document
