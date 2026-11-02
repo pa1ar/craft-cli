@@ -2,7 +2,7 @@
 // stdout is JSON for the parent process; stderr is intentionally ignored.
 import { discoverLocalStore } from "../../lib/local-db.ts";
 
-type HelperOp = "probe" | "listDocs" | "search" | "readDoc" | "readDocs";
+type HelperOp = "probe" | "listDocs" | "search" | "readDoc" | "readDocs" | "rootOf";
 
 export async function runLocalWorker(argv: string[]): Promise<void> {
   const op = argv[0] as HelperOp | undefined;
@@ -88,6 +88,20 @@ export async function runLocalWorker(argv: string[]): Promise<void> {
             for (const id of [...new Set(ids)]) docs[id] = store.getDocMarkdown(id);
           }
           writeOk({ available: true, docs });
+        } finally {
+          store.close();
+        }
+        return;
+      }
+      case "rootOf": {
+        const store = discoverLocalStore(stringValue(payload.spaceId));
+        if (!store) {
+          writeOk({ available: false, root: null });
+          return;
+        }
+        try {
+          const id = stringValue(payload.id);
+          writeOk({ available: true, root: id ? store.documentRootOf(id) : null });
         } finally {
           store.close();
         }

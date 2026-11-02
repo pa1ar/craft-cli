@@ -37,7 +37,8 @@ export type {
   ReminderStatus,
   RemindersListResponse,
 } from "./reminders.ts";
-export { extractOutgoing, inferTitle } from "./links.ts";
+export { extractOutgoing, inferTitle, LinkScopeError, isInternalLinksUnavailable } from "./links.ts";
+export type { LinkDirection, LinkScopeOptions, LinksResult } from "./links.ts";
 
 export { pickSkills, keywordSkills } from "./skill-picker.ts";
 export type { PickerResult, PickedSkill } from "./skill-picker.ts";

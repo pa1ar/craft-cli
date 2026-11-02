@@ -206,6 +206,28 @@ export class LocalStore {
     };
   }
 
+  /** Map any block id (document, page, card, text block) to the API id of
+   * the document root that contains it. Null when the block isn't cached. */
+  documentRootOf(blockId: string): string | null {
+    try {
+      const row = this.db
+        .query<{ documentId: string }, [string]>(
+          `SELECT documentId FROM BlockSearch WHERE id = ? COLLATE NOCASE LIMIT 1`,
+        )
+        .get(blockId);
+      if (!row) return null;
+      const doc = this.db
+        .query<{ id: string }, [string]>(
+          `SELECT id FROM BlockSearch WHERE documentId = ? AND entityType = 'document' LIMIT 1`,
+        )
+        .get(row.documentId);
+      return doc?.id ?? null;
+    } catch (err) {
+      console.warn(`[local-db] documentRootOf error: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   /** Resolve an API entity id to its internal document id and title.
    * The BlockSearch document row keeps the title as typed; PTS `title` is a
    * normalized search form and can differ in case. */

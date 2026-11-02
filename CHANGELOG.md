@@ -8,6 +8,14 @@ Each commit should be one change, scoped enough to land in a single line here.
 
 ## [Unreleased]
 
+### Added
+- `craft links map` exposes Craft's `/internal-links` directly: whole-space pairs, `--from`/`--to` documents, `--from-date`/`--to-date` daily notes, `--level block`, cursor paging or `--all`.
+- `client.links.page/all/findRoot` and native `backlinks`/`outgoing` returning `/internal-links` items with titles; `LinkScopeError` when a card or block can't be mapped to its document.
+
+### Changed
+- `craft links in/out` and `--links` on reads use Craft's native `/internal-links` instead of title search and tree parsing. Results now include date mentions and links with custom text, and carry document titles and reference counts. Card and block ids resolve to their document through the local cache, `--doc` or `--scan`.
+- The title-search path is now `--legacy` (`--text` and `--exhaustive` imply it) and is used automatically only when the endpoint is unavailable. JSON from `links` and `backlinks` arrays now use the `/internal-links` item shape.
+
 ## [0.10.0] - 2026-10-09
 
 ### Added

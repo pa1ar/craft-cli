@@ -68,7 +68,7 @@ You are installing craft-cli (https://github.com/pa1ar/craft-cli) for me. Use th
 
 A local-first CLI for Craft Docs. The primary goal is to make Craft content as easy to read and edit from AI coding agents (Claude Code, Codex, OpenCode, etc.) as local files are in tools like Obsidian.
 
-The CLI handles the API's footguns and undocumented behaviors internally - rate limits, inconsistent payload keys, silent routing of unanchored inserts, missing `content` keys at depth 0, RE2 regex edge cases, backlink resolution via title search - so that agents and scripts don't have to.
+The CLI handles the API's footguns and undocumented behaviors internally - rate limits, inconsistent payload keys, silent routing of unanchored inserts, missing `content` keys at depth 0, RE2 regex edge cases, mapping card and block links to their documents - so that agents and scripts don't have to.
 
 Built with Bun. Ships as a single compiled binary. Also exports a TypeScript library for programmatic use.
 
@@ -152,8 +152,9 @@ craft col ls / schema / items    collections and structured data
 craft col items add / update / rm
 craft col views ls/create/update/active/rm
 
-craft links out <id>             outgoing links (parsed from markdown)
-craft links in <id>              backlinks (title-based vault search)
+craft links out <id>             outgoing links (Craft /internal-links)
+craft links in <id>              backlinks (Craft /internal-links)
+craft links map --from-date today   raw link pairs, whole space or daily notes
 
 craft upload <file> --parent <doc>
 craft comment <id> "text"
@@ -308,7 +309,7 @@ The API is the only write path and the authoritative source for block hierarchy.
 | Offline reads | no | yes (local data stores) |
 | Rate limits | yes (though generous) | no (local reads are free) |
 | Context window cost | verbose JSON responses | compact markdown or `--json` on demand |
-| Backlinks | not supported natively | faked via title search + block:// filter |
+| Backlinks | experimental `/internal-links` (document root ids only) | native endpoint; card/block ids mapped to their document via local cache |
 | Mutation history | none | SQLite journal with diff/undo/log |
 
 ### Why not just use local files (Obsidian-style)?

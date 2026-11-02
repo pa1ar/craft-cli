@@ -54,7 +54,7 @@ Read
   # present; missing cache content falls back to API.
   # "(local)" or "(api)" is printed to stderr. --depth, --metadata, --raw and
   # --json use the API. Strict --source local rejects unsupported content reads.
-  # backlinks need the API, so they are opt-in via --links.
+  # backlinks need the API (Craft /internal-links), so they are opt-in via --links.
   blocks search <docId> <pattern> [--before N] [--after N] [--fetch]
   tasks [ls [all|inbox|active|upcoming|logbook|document]] [filters] [--json]
     filters: --state S --doc ID --document TEXT --date D --scheduled D --deadline D
@@ -107,8 +107,12 @@ Collections
   col rm <id>                                    (deletes the collection block)
 
 Links
-  links out <blockId>                            outgoing links (free, parses fetched tree)
-  links in <blockId> [--text STR] [--exhaustive] backlinks via title search (fast) or full scan
+  links out <id> [--level document|block]       outgoing links (Craft /internal-links)
+  links in <id> [--level document|block]        backlinks (Craft /internal-links)
+    card/block ids: root found via local cache; else --doc ROOT or --scan (slow)
+    --legacy [--text STR] [--exhaustive]        old title search / tree parse
+  links map [--from ID] [--to ID] [--from-date D] [--to-date D] [--all]
+                                                raw link pairs or block refs (--level block)
 
 Misc
   agent-context [--json]                        emit stable JSON manifest for agents

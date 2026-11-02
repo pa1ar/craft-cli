@@ -2,8 +2,10 @@
 // markdown reads are local-first: the Craft Desktop PlainTextSearch mirror is
 // read when available and the API is only used when it is not.
 import type { CraftClient } from "../lib/client.ts";
-import type { Block, BlockLink } from "../lib/types.ts";
-import { inferTitle } from "../lib/links.ts";
+import type { Block } from "../lib/types.ts";
+import { inferTitle, LinkScopeError } from "../lib/links.ts";
+import { backlinksWithFallback, localRootResolver, type AnyLink } from "./links-native.ts";
+export { renderBacklinksMarkdown } from "./links-native.ts";
 import { stripPageWrapper } from "./format.ts";
 import { readLocalDocSafe } from "./local-safe.ts";
 import type { LocalDocReadOutcome } from "./local-safe.ts";
@@ -19,7 +21,7 @@ export interface GetAndRenderOpts {
   format: "json" | "markdown";
   raw?: boolean;     // keep <page> wrapper in markdown output
   withLinks?: boolean;  // fetch + attach backlinks (opt-in; needs the API)
-  exhaustive?: boolean; // use exhaustive backlinks scan
+  exhaustive?: boolean; // use the legacy exhaustive backlinks scan
   source?: Source;      // read source for this call (default auto)
   spaceId?: string;     // required for local-first reads
   /** Test seams for local routing; production callers should omit these. */
@@ -32,7 +34,7 @@ export interface GetAndRenderOpts {
 export interface GetAndRenderResult {
   /** parsed JSON block when format==="json", or the markdown string when "markdown" */
   payload: Block | string;
-  backlinks: BlockLink[] | null; // null = not fetched (opted out)
+  backlinks: AnyLink[] | null; // null = not fetched (opted out)
   /** which store served the content */
   servedBy: "local" | "api";
 }
@@ -122,7 +124,7 @@ export async function getAndRender(
 
     if (local.status === "available" && local.doc) {
       const backlinks = withLinks
-        ? await fetchBacklinks(client, local.doc.id, local.doc.title, opts.exhaustive)
+        ? await fetchBacklinks(client, local.doc.id, local.doc.title, opts)
         : null;
       return { payload: local.doc.markdown, backlinks, servedBy: "local" };
     }
@@ -163,14 +165,16 @@ export async function getAndRender(
   if (opts.format === "markdown") {
     const md = (await fetchBlock("markdown")) as string;
     const payload = opts.raw ? md : stripPageWrapper(md);
-    let backlinks: BlockLink[] | null = null;
+    let backlinks: AnyLink[] | null = null;
     if (withLinks) {
-      const structured = (await fetchBlock("json")) as Block;
+      // native backlinks need only the id; the structured fetch is for daily
+      // notes (no id yet) and the legacy fallback's title
+      const structured = opts.id ? undefined : ((await fetchBlock("json")) as Block);
       backlinks = await fetchBacklinks(
         client,
-        opts.id ?? structured.id,
-        inferTitle(structured),
-        opts.exhaustive,
+        opts.id ?? structured!.id,
+        structured ? inferTitle(structured) : undefined,
+        opts,
       );
     }
     return { payload, backlinks, servedBy: "api" };
@@ -178,39 +182,32 @@ export async function getAndRender(
 
   const structured = (await fetchBlock("json")) as Block;
   const backlinks = withLinks
-    ? await fetchBacklinks(client, opts.id ?? structured.id, inferTitle(structured), opts.exhaustive)
+    ? await fetchBacklinks(client, opts.id ?? structured.id, inferTitle(structured), opts)
     : null;
   return { payload: structured, backlinks, servedBy: "api" };
 }
 
-/** Backlinks are a faked title-based search on Craft's side, so they always
- * cost a network round trip. Never let them fail a read. */
+/** Backlinks for --links reads: Craft's native /internal-links, the legacy
+ * full scan with --exhaustive. Never let them fail a read. */
 async function fetchBacklinks(
   client: CraftClient,
   id: string,
-  title: string,
-  exhaustive?: boolean,
-): Promise<BlockLink[]> {
-  if (!title) return [];
+  title: string | undefined,
+  opts: GetAndRenderOpts,
+): Promise<AnyLink[]> {
   try {
-    return exhaustive
-      ? await client.links.backlinksExhaustive(id)
-      : await client.links.backlinks(id, { linkText: title });
-  } catch {
+    if (opts.exhaustive) return await client.links.backlinksExhaustive(id);
+    return await backlinksWithFallback(client, id, {
+      title,
+      resolveDocumentId: localRootResolver(opts.spaceId, opts.source ?? "auto"),
+    });
+  } catch (e) {
+    if (e instanceof LinkScopeError) console.error(`backlinks skipped: ${e.message}`);
     return [];
   }
 }
 
-export function renderBacklinksMarkdown(backlinks: BlockLink[]): string {
-  if (backlinks.length === 0) return "\n\n---\n\n## Backlinks\n\n_none_\n";
-  const lines = backlinks.map((l) => {
-    const text = l.text || "(untitled)";
-    return `- **${text}** → \`${l.inDocumentId}\` / \`${l.inBlockId}\``;
-  });
-  return `\n\n---\n\n## Backlinks (${backlinks.length})\n\n${lines.join("\n")}\n`;
-}
-
-export function attachBacklinksJson(block: Block, backlinks: BlockLink[] | null): unknown {
+export function attachBacklinksJson(block: Block, backlinks: AnyLink[] | null): unknown {
   if (backlinks === null) return block;
   return { ...block, backlinks };
 }

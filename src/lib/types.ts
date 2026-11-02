@@ -69,6 +69,50 @@ export interface BlockLink {
   inDocumentId: string;
 }
 
+/** Document-level pair from GET /internal-links (default level). */
+export interface InternalLinkPair {
+  sourceDocumentId: string;
+  targetDocumentId: string;
+  referenceCount: number;
+  /** returned by Craft only for target-only queries (backlinks) */
+  sourceDocumentTitle?: string;
+  /** returned by Craft only for source-only queries (outgoing) */
+  targetDocumentTitle?: string;
+}
+
+/** Block-level reference from GET /internal-links?level=block. Titles are
+ * filled in by craft-cli from GET /documents; Craft omits them at this level. */
+export interface InternalLinkRef {
+  id: string;
+  sourceDocumentId: string;
+  sourceBlockId: string;
+  targetDocumentId: string;
+  targetBlockId: string;
+  sourceDocumentTitle?: string;
+  targetDocumentTitle?: string;
+}
+
+export type InternalLink = InternalLinkPair | InternalLinkRef;
+
+export interface InternalLinksQuery {
+  level?: "document" | "block";
+  fromDocumentId?: string;
+  toDocumentId?: string;
+  /** source daily note: YYYY-MM-DD, today, yesterday, tomorrow */
+  fromDate?: string;
+  /** target daily note: YYYY-MM-DD, today, yesterday, tomorrow */
+  toDate?: string;
+  includeSelfLinks?: boolean;
+  /** page size, 1-200 */
+  limit?: number;
+  cursor?: string;
+}
+
+export interface InternalLinksPage<T extends InternalLink = InternalLink> {
+  items: T[];
+  pagination?: { cursor: string };
+}
+
 export type Position =
   | { position: "start" | "end"; pageId: string }
   | { position: "start" | "end"; date: DateInput };

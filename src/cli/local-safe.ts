@@ -33,7 +33,7 @@ export interface LocalDocBatchReadOutcome {
   docs: Record<string, LocalDocMarkdown | null>;
 }
 
-type HelperOp = "probe" | "listDocs" | "search" | "readDoc" | "readDocs";
+type HelperOp = "probe" | "listDocs" | "search" | "readDoc" | "readDocs" | "rootOf";
 
 interface ProcessResult {
   timedOut: boolean;
@@ -165,6 +165,22 @@ export async function readLocalDocsSafe(
     timeoutMs,
     docs: result.value.docs ?? {},
   };
+}
+
+/** Document root id that contains `id`, from the local store. Null when the
+ * store is unavailable, slow, or doesn't know the block. */
+export async function localDocumentRootSafe(
+  id: string,
+  opts?: { spaceId?: string; timeoutMs?: number },
+): Promise<string | null> {
+  const timeoutMs = opts?.timeoutMs ?? localTimeoutMs();
+  const result = await runLocalHelper<{ available: boolean; root: string | null }>(
+    "rootOf",
+    { id, spaceId: opts?.spaceId },
+    timeoutMs,
+  );
+  if (!result.ok) return null;
+  return result.value.root ?? null;
 }
 
 async function runLocalHelper<T>(

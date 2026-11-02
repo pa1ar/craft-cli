@@ -70,8 +70,8 @@ craft docs get <id>                   # compatible document read command
 craft docs get <id> --raw             # keeps <page>/<content> wrappers
 craft docs get <id> --json            # structured block tree with ids (API)
 craft docs get <id> --depth 1         # only direct children
-craft docs get <id> --links           # also fetch backlinks (API call)
-craft docs get <id> --exhaustive      # use full-vault scan for backlinks (slow, catches more)
+craft docs get <id> --links           # also fetch backlinks (Craft /internal-links)
+craft docs get <id> --exhaustive      # legacy full-vault scan for backlinks (slow, deprecated)
 craft docs daily [DATE]               # DATE = today|yesterday|tomorrow|YYYY-MM-DD (local-first)
 craft docs mk "Title" --folder <id>
 craft docs mv <id> --to <folderId|unsorted|templates>
@@ -150,10 +150,17 @@ craft col views rm <collectionId> <viewId>
 # (key/name string); reads return propertyKey/propertyId.
 
 # links (outgoing + backlinks)
-craft links out <blockId>             # outgoing: parsed from fetched markdown, zero extra API calls
-craft links in  <blockId>             # backlinks: title-based vault search + local block:// filter (~1 call)
-craft links in  <blockId> --text "custom label"   # when the link text isn't the target's title
-craft links in  <blockId> --exhaustive            # full-vault scan (slow, ~2-3 min for 1000+ docs)
+# Craft's native /internal-links (experimental). document level = pairs with
+# titles + referenceCount; --level block = exact source/target block ids.
+craft links out <id>                  # documents this doc (or card/block) references
+craft links in  <id>                  # where it is referenced (backlinks)
+craft links in  <id> --level block    # exact referencing blocks
+craft links in  <cardId> --doc <rootId>  # card/block id without local cache: name its document
+craft links in  <cardId> --scan       # or scan the whole space (slow, ~1-2 min)
+craft links map --from-date today     # what today's daily note links to
+craft links map --to <rootId> --level block --all   # raw refs, all pages
+craft links map --from A --to B       # references from A to B
+craft links in  <id> --legacy [--text STR] [--exhaustive]  # old title search, fallback only
 
 # patch — find and replace in blocks (like Edit tool for Craft)
 craft patch <docId> --old "existing text" --new "replacement text"
@@ -252,7 +259,7 @@ These stay on the API by design:
 - `--depth N` — block-tree depth is an API semantic
 - `--metadata`
 - `--raw` — preserves the API transport wrapper
-- `--links` / `--exhaustive` — backlinks are a faked title search on Craft's side
+- `--links` / `--exhaustive` — backlinks come from Craft's /internal-links (exhaustive = legacy full scan)
 
 `--source api` forces reads through the API. For Markdown content commands, `--source local` never calls the API: it rejects missing content and API-only flags. Backlinks via `--links` or `--exhaustive` need `auto` or `api`.
 
@@ -376,18 +383,17 @@ craft docs search "#ref" --fetch-blocks --json |
   jq -r '.items[] | .markdown'
 ```
 
-### 8. Find all backlinks to a document
+### 8. Find backlinks and outgoing links
 
 ```sh
-# fast path — one search call, works when the link text is the target's title
-craft links in <blockId>
-
-# when link text is customized
-craft links in <blockId> --text "the phrase used in the link"
-
-# when you suspect the fast path missed references (rare — use sparingly)
-craft links in <blockId> --exhaustive
+craft links in  <docId>               # who references this doc: titles + counts
+craft links out <docId>               # what this doc references
+craft links in  <docId> --level block # exact source blocks, then read them
+craft links in  <cardId>              # cards/blocks: document found via local cache
+craft links in  <cardId> --doc <rootId>   # API-only: name the containing document
 ```
+
+Read the linked content to learn the relationship. Links are references, not ownership, assignees or due dates.
 
 ### 9. Get a deeplink to open in the Craft app
 
@@ -462,9 +468,10 @@ Read back with `craft blocks get BLOCK_ID --json` and check `type`, `language`, 
 11. **Daily note auto-creates** when you append with `--date today` and no note exists yet.
 12. **When the user's Craft conventions call for AI attribution, use the harness-neutral `#by/ai` tag.** User instructions to preserve source content exactly or omit attribution take precedence.
 13. **Links & backlinks**:
-    - **Outgoing links are free** — every `[text](block://UUID)` reference is already in the block's markdown after a normal fetch. `craft links out` just parses it.
-    - **Incoming links (backlinks) are NOT natively supported.** Craft's search index strips `block://UUID` URIs — searching for a raw UUID returns zero hits. The CLI uses Pavel's trick: the visible anchor text of a link IS indexed, and Craft's default link text is the target's title, so `docs/search` for the title followed by a local `block://<id>` filter finds backlinks in one API call. Set `--text` when authors use custom labels. Fall back to `--exhaustive` only when the fast path looks suspiciously empty.
-    - **Backlinks are opt-in via `--links`.** They always need an API round trip, so reads do not fetch them by default. With `--links`, markdown mode appends a `## Backlinks` section and JSON mode adds a top-level `backlinks` array. `--no-links` is still accepted and is now a no-op.
+    - **Both directions are native** via Craft's experimental `GET /internal-links` (same data as the Craft MCP `internal-links get`). It counts links to documents, cards and blocks, plus date mentions with an existing daily note. It excludes user mentions, comments, collection relations and share URLs, and anything in Recently Deleted.
+    - **Ids must be document roots.** Links to a card or block roll up to its containing document. The CLI finds that document in the local Craft cache, then filters block-level references. Without the cache (`--source api`, Linux), pass `--doc <rootId>` or `--scan`; otherwise it exits 4. Unknown ids return an empty list, not an error.
+    - **Link text is not returned.** Titles come back at document level (and are added from `GET /documents` at block level). Use `--legacy` for the old title search that keeps anchor text; the CLI also falls back to it automatically when the endpoint is unavailable.
+    - **Backlinks are opt-in via `--links`.** They always need an API round trip, so reads do not fetch them by default. With `--links`, markdown mode appends a `## Backlinks` section (source document titles and reference counts) and JSON mode adds a top-level `backlinks` array of `/internal-links` items. `--no-links` is still accepted and is now a no-op.
 14. **`clickableLink` lives at `metadata.clickableLink`** on GET /blocks responses when `fetchMetadata=true`, and at the top level on list/create responses.
 15. **Search freshness lag**: newly created child pages may appear in parent reads (`docs get <parentId> --depth N`) before they show up in `docs search`. If search misses something recent, fetch the parent with depth as a fallback: `craft docs get <parentId> --depth 2` or `craft docs daily --depth 2`.
 16. **Typed block insert fidelity**: `craft blocks insert --file blocks.json` accepts every native block variant (`text`, `page`, `richUrl`, `video`, `image`, `file`, `line`, `code`, `table`) with its native fields (`url`, `title`, `description`, `listStyle`, `textStyle`, `color`, `decorations`, nested `content`, etc.). Use this — not `blocks append --markdown` — when copying blocks between docs, because `append` goes through markdown parsing and loses native types (video/richUrl/image collapse to text).
